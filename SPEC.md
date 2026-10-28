@@ -2427,15 +2427,17 @@ archives the server has restored, and that has restored the server's.
 
 ## Appendix A. Mapping a team memory server onto PCP (informative)
 
-This appendix maps Agent Brain, an open-source WordPress plugin that gives a
-team's agents shared, partitioned, reviewed memory, onto PCP v0.3. It is
-built from the plugin source (commit `4f24875`, plugin 1.0.0 with
-`wordpress/mcp-adapter` 0.6.1) on 2026-10-19. It is a guide for that
-project's maintainers and for any similar server, not a requirement.
+This appendix maps TomaTío (formerly Agent Brain), an open-source
+WordPress plugin that gives a team's agents shared, partitioned, reviewed
+memory, onto PCP v0.3. It is built from the plugin source (commit
+`4f24875`, plugin 1.0.0 with `wordpress/mcp-adapter` 0.6.1) on 2026-10-19.
+It is a guide for that project's maintainers and for any similar server,
+not a requirement. The plugin's code still uses the old name, so its
+abilities (`agent-brain/...`) and the `x_agent_brain` key keep it here.
 
 ### A.1 Concepts
 
-| Agent Brain | PCP v0.3 home | Status |
+| TomaTío | PCP v0.3 home | Status |
 |---|---|---|
 | One site (one brain) | A context of kind `team` (§1.2); controller `org:<site>` or the administering human | Core |
 | `ab_agent` users | Principals `agent:<user_login>` (§1.3) | Core |
@@ -2484,7 +2486,7 @@ project's maintainers and for any similar server, not a requirement.
 
 ### A.2 Tools
 
-| Agent Brain ability | PCP tool |
+| TomaTío ability | PCP tool |
 |---|---|
 | `agent-brain/context-briefing` | `context_brief` |
 | `agent-brain/memory-search` | `memory_search` |
