@@ -3,10 +3,10 @@
 <img src="assets/banner.svg" alt="PCP, the Portable Context Protocol: portable AI context behind one URL you control" width="100%">
 
 <p>
-  <img src="https://img.shields.io/badge/spec-v0.3-ff0018?style=flat-square&labelColor=000000" alt="Spec v0.3">
-  <img src="https://img.shields.io/badge/status-request%20for%20comments-f4f2ee?style=flat-square&labelColor=000000" alt="Request for comments">
-  <img src="https://img.shields.io/badge/built%20on-MCP%20·%20OAuth%202.1%20·%20Markdown-ff0018?style=flat-square&labelColor=000000" alt="MCP · OAuth 2.1 · Markdown">
-  <img src="https://img.shields.io/badge/license-Apache%202.0-a8a5a0?style=flat-square&labelColor=000000" alt="Apache 2.0">
+  <img src="https://img.shields.io/badge/spec-v0.3-185FA5?style=flat-square&labelColor=12243A" alt="Spec v0.3">
+  <img src="https://img.shields.io/badge/status-request%20for%20comments-85B7EB?style=flat-square&labelColor=12243A" alt="Request for comments">
+  <img src="https://img.shields.io/badge/built%20on-MCP%20·%20OAuth%202.1%20·%20Markdown-185FA5?style=flat-square&labelColor=12243A" alt="MCP · OAuth 2.1 · Markdown">
+  <img src="https://img.shields.io/badge/license-Apache%202.0-4B5A6B?style=flat-square&labelColor=12243A" alt="Apache 2.0">
 </p>
 
 # Portable Context Protocol
