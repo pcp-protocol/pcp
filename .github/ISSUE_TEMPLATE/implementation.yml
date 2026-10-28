@@ -1,0 +1,27 @@
+name: Implementation or interop
+description: Tell us about an implementation, or ask to test interop together.
+labels: ["question"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Project
+      description: Name and link.
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Role
+      multiple: true
+      options:
+        - Server
+        - Client
+        - Importer or exporter
+        - Hosting platform
+        - Other
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Which context kinds and spec version you support, conformance results if you have them, and what you would like to test.

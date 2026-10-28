@@ -17,6 +17,8 @@ Your profile, your memory, your connections, behind one URL you control,<br>usab
 
 </div>
 
+PCP is open and independent. It belongs to no company or product. Anyone can implement it, free, for any purpose, without asking. Changes are proposed and decided in public; see [`GOVERNANCE.md`](GOVERNANCE.md).
+
 ---
 
 ## The problem
@@ -69,7 +71,7 @@ Any MCP client can then use the standard tools (`context_brief`, `profile_get`, 
 
 ## Status
 
-**v0.3, request for comments.** v0.3 is the first version independent implementations can build against and test each other with: a team context model, export and import with a checkable archive, authorization for current MCP, defined key custody, and a [conformance suite](conformance/). PCP is pre-1.0, so a later v0.x may still change things, with migration notes. For the previous text, pin the [`v0.2-draft`](../../tree/v0.2-draft) tag.
+**v0.3, request for comments.** v0.3 is the first version independent implementations can build against and test each other with: a team context model, export and import with a checkable archive, authorization for current MCP, defined key custody, and a [conformance suite](conformance/). PCP is pre-1.0, so a later v0.x may still change things, with migration notes. For the previous text, pin the [`v0.2-draft`](https://github.com/pcp-protocol/pcp/tree/v0.2-draft) tag.
 
 This is the right time to shape the protocol. Early feedback changes the spec; later feedback changes v2.
 
@@ -79,18 +81,23 @@ This is the right time to shape the protocol. Early feedback changes the spec; l
 - **Open an issue**: design questions, gaps, things that don't fit your use case.
 - **Build an implementation**: a server, a client, an importer, a conformance test. Running code carries the most weight. Open an issue so we can test interop together.
 - **Host it**: if you run a hosting platform, PCP is designed to be offered alongside email, storage and websites: one context per customer, standard export, no lock-in. We want to hear what you need from the spec.
-- **Write an extension**: new profile namespaces and connections: see [`extensions/`](extensions/).
+- **Write an extension**: new profile namespaces and connections: see [`extensions/`](https://github.com/pcp-protocol/pcp/tree/main/extensions).
 - **Harden it**: [`SECURITY.md`](SECURITY.md) is meant to be community-owned. Field reports from self-hosters are especially welcome.
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how changes are made.
+See [`CONTRIBUTING.md`](https://github.com/pcp-protocol/pcp/blob/main/CONTRIBUTING.md) for how to help and [`GOVERNANCE.md`](GOVERNANCE.md) for how changes are decided. Everyone taking part follows the [code of conduct](https://github.com/pcp-protocol/pcp/blob/main/CODE_OF_CONDUCT.md).
 
 ## Implementations
 
-No implementation claims v0.3 conformance yet. The [conformance suite](conformance/) checks a server against every requirement in [`docs/conformance.md`](docs/conformance.md), and SPEC §10 says how to claim a profile. Listing is open to every implementation, open source or commercial, self-hosted or hosted, and is never an endorsement. Building one? Open a PR to add it.
+Anyone can build a PCP server or client. Listing is open to every implementation, open source or commercial, self-hosted or hosted, and is never an endorsement. Building one? Open a PR to add it.
+
+No implementation claims v0.3 conformance yet. The [conformance suite](https://github.com/pcp-protocol/pcp/tree/main/conformance) checks a server against every requirement in [`docs/conformance.md`](docs/conformance.md), and SPEC §10 says how to claim a profile.
 
 | Project | Role | License | Status |
 |---|---|---|---|
+| [TomaTío](https://tomatio.ai) | **Reference implementation.** A WordPress plugin that gives teams of people and AI agents a shared memory; serves `team` contexts, with PCP export and import | Open source (GPL) | Implements v0.3 `team` contexts; conformance not yet claimed |
 | [Refugio](https://github.com/Phantazein-apps/refugio) | Local LLM; connects to any PCP context as an MCP client, and can host one on `localhost` | Open source, free | PCP client; local server planned |
+
+The reference implementation is the one maintainers test the spec against first. It is an implementation like any other: it does not own PCP, has no special standing in decisions, and nothing in the spec depends on it.
 
 ### Fully local: PCP + Refugio
 
@@ -105,19 +112,21 @@ PCP is the *context* refuge; [Refugio](https://github.com/Phantazein-apps/refugi
 | Path | Contents |
 |---|---|
 | [`SPEC.md`](SPEC.md) | The protocol specification |
-| [`schemas/0.3/`](schemas/0.3/) | JSON Schemas: discovery, profiles, memory page frontmatter, tools, audit entries |
-| [`examples/0.3/`](examples/0.3/) | Examples that validate against the schemas (`invalid/` ones must fail) |
-| [`scripts/validate_schemas.py`](scripts/validate_schemas.py) | Checks every schema, example and example archive (`pip install jsonschema pyyaml`) |
-| [`conformance/`](conformance/) | The conformance suite, its reference server, and the archive checker |
-| [`extensions/`](extensions/) | Extension namespace registry and authoring guide |
-| [`docs/`](docs/) | The conformance requirements, and informative guides: interop with other memory formats, management API, networking, profile bootstrap, style profiles |
+| [`schemas/0.3/`](https://github.com/pcp-protocol/pcp/tree/main/schemas/0.3) | JSON Schemas: discovery, profiles, memory page frontmatter, tools, audit entries |
+| [`examples/0.3/`](https://github.com/pcp-protocol/pcp/tree/main/examples/0.3) | Examples that validate against the schemas (`invalid/` ones must fail) |
+| [`scripts/validate_schemas.py`](https://github.com/pcp-protocol/pcp/blob/main/scripts/validate_schemas.py) | Checks every schema, example and example archive (`pip install jsonschema pyyaml`) |
+| [`conformance/`](https://github.com/pcp-protocol/pcp/tree/main/conformance) | The conformance suite, its reference server, and the archive checker |
+| [`extensions/`](https://github.com/pcp-protocol/pcp/tree/main/extensions) | Extension namespace registry and authoring guide |
+| [`docs/`](https://github.com/pcp-protocol/pcp/tree/main/docs) | The conformance requirements, and informative guides: interop with other memory formats, management API, networking, profile bootstrap, style profiles |
 | [`SECURITY.md`](SECURITY.md) | Threat model and best practices for self-hosters and hosts |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to propose changes |
+| [`CONTRIBUTING.md`](https://github.com/pcp-protocol/pcp/blob/main/CONTRIBUTING.md) | How to help |
+| [`GOVERNANCE.md`](GOVERNANCE.md) | How spec changes are proposed and decided |
+| [`CODE_OF_CONDUCT.md`](https://github.com/pcp-protocol/pcp/blob/main/CODE_OF_CONDUCT.md) | How we treat each other |
 
 ## License
 
-Specification text, schemas and examples are licensed under [Apache 2.0](LICENSE). Anyone may implement PCP, free of charge, for any purpose. Any implementation that passes the conformance requirements may say it implements PCP; no one may imply the project endorses their product.
+Specification text, schemas and examples are licensed under [Apache 2.0](https://github.com/pcp-protocol/pcp/blob/main/LICENSE). Anyone may implement PCP, free of charge, for any purpose. Any implementation that passes the conformance requirements may say it implements PCP; no one may imply the project endorses their product.
 
 ## Governance
 
-PCP is developed in the open by its contributors, in the [`pcp-protocol`](https://github.com/pcp-protocol) organization. Decisions are made in public issues and pull requests, on technical merit. No company or implementation has special standing, and none is the "official" one.
+PCP is developed in the open by its contributors, in the [`pcp-protocol`](https://github.com/pcp-protocol) organization. Decisions are made in public issues and pull requests, on technical merit. No company or implementation has special standing, and none is the "official" one. [`GOVERNANCE.md`](GOVERNANCE.md) has the details.
