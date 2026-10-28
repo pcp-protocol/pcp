@@ -1,0 +1,28 @@
+name: Report a problem
+description: Something in the spec, schemas, examples or conformance suite is wrong or unclear.
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - SPEC.md
+        - Schemas or examples
+        - Conformance suite
+        - Docs or website
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What is wrong
+      description: Quote the text or paste the output. Say what you expected.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Spec version or commit, for example v0.3.

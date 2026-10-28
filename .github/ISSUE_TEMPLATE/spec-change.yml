@@ -1,0 +1,32 @@
+name: Propose a spec change
+description: Suggest a change to what PCP says or requires.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping shape PCP. See [GOVERNANCE.md](https://github.com/pcp-protocol/pcp/blob/main/GOVERNANCE.md) for how changes are decided.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is missing, wrong or hard today? Who does it affect?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should change? Name the SPEC sections if you know them.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: What breaks
+      description: Which servers or clients would need to change, and how they would migrate.
+  - type: textarea
+    id: code
+    attributes:
+      label: Running code
+      description: Links to an implementation or prototype, if any. Running code carries weight.
