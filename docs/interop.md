@@ -37,10 +37,12 @@ Every importer below runs in **import mode** (SPEC §8.7.3). In short:
 In the tables, "fields" means `x_import.fields`, and "map" means the
 `principal_map` or `partition_map` of the import request (§8.7.3 item 7).
 
-## 2. Agent Brain
+## 2. TomaTío
 
-Agent Brain is a WordPress plugin that gives a team's agents shared,
-partitioned and reviewed memory. SPEC Appendix A maps its concepts. This
+TomaTío (formerly Agent Brain) is a WordPress plugin that gives a team's
+agents shared, partitioned and reviewed memory. Its code still uses the
+old name, so the `agent-brain` import format, the `x_agent_brain` key and
+the `ab_` tables keep it here. SPEC Appendix A maps its concepts. This
 section maps every field of its export, and the data its export does not
 yet carry, onto a PCP archive, checked against the plugin source at commit `4f24875`
 (`Modules/Forget/Exporter.php`, `Forgetter.php`, `Matcher.php`,
@@ -79,7 +81,7 @@ manifest.
 | (file name) | `ID` | `memory/knowledge/<post_name>.md` or `memory/procedures/<post_name>.md`. `post_name` can hold percent-encoded characters for non-ASCII titles, which the path grammar forbids: then use `knowledge/<ID>` |
 | `id` | `ID` | `id: ab-knowledge-<ID>` or `ab-procedure-<ID>` |
 | `type` | post type | `type: semantic` (knowledge) or `procedural` |
-| `scope` | `ab_scope` term ids (a list) | `partition`: the term's slug. A page has one partition (SPEC §5.3); a post in several terms goes in the first by term id, with the others in `x_agent_brain.also_in`. That narrows access, which fails closed; Agent Brain restores all terms from the key |
+| `scope` | `ab_scope` term ids (a list) | `partition`: the term's slug. A page has one partition (SPEC §5.3); a post in several terms goes in the first by term id, with the others in `x_agent_brain.also_in`. That narrows access, which fails closed; TomaTío restores all terms from the key |
 | `agent` | `ab_proposing_agent` | `review.generated.by` and `source.principal` |
 | `created` | `post_date_gmt` | `recorded_at` |
 | `importance` | `ab_importance` | `importance` divided by 100 |
@@ -92,7 +94,7 @@ manifest.
 
 ### 2.2 Data the export does not carry yet
 
-| Agent Brain data | PCP archive |
+| TomaTío data | PCP archive |
 |---|---|
 | `post_title` | `title` (REQUIRED). Rows have no title: derive one (§1) |
 | `post_modified_gmt` | `updated` for posts |
@@ -117,7 +119,7 @@ manifest.
 | Encrypted backups (`ab_backup_key`, a site key) | Not an export: host custody (SPEC §8.4 item 4). Erasure propagates to them |
 | Settings (`ab_proposal_threshold`, `ab_export_keep` and the like) | Not exported (server configuration) |
 
-### 2.3 What a PCP exporter for Agent Brain produces
+### 2.3 What a PCP exporter for TomaTío produces
 
 1. The §8.2 layout and a `manifest.json` with every file's SHA-256 and
    size, counts, `omitted` and `credentials_included: false`.
@@ -134,9 +136,9 @@ manifest.
    `hash_hmac('sha256', $subject, <site secret>)`. The plugin's phrase
    matching for forget fits SPEC §8.9.1 item 3.
 
-### 2.4 Importing into Agent Brain
+### 2.4 Importing into TomaTío
 
-| PCP page | Agent Brain |
+| PCP page | TomaTío |
 |---|---|
 | `type: semantic` or `procedural`, approved | `ab_knowledge` or `ab_procedure`, status `private`; review meta from `review.verified` |
 | Proposed (always, in import mode) | `ab_proposed`, reviewed in wp-admin |
@@ -168,7 +170,7 @@ procedures and 6 decisions waiting for review.
 2. **What recall shows is not what export writes.** Recall wraps content in
    `<memory_data>` with HTML entities (`&#039;`). The exporter writes the
    stored text, or the body would change on every round trip.
-3. **Restore into a fresh Agent Brain.** Same paths, ids and review state;
+3. **Restore into a fresh TomaTío.** Same paths, ids and review state;
    the 6 decisions are still in the review queue; principals are unbound
    until the curators sign in and agents get new application passwords.
    Re-export is byte-identical if the exporter serializes deterministically
