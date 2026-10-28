@@ -1,4 +1,4 @@
-<div align="center">
+<div align="center" markdown="1">
 
 <img src="assets/banner.svg" alt="PCP, the Portable Context Protocol: portable AI context behind one URL you control" width="100%">
 
