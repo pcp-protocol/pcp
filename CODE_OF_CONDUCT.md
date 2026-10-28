@@ -23,7 +23,7 @@ This applies in every project space: issues, pull requests, discussions, and any
 
 ## Reporting
 
-Report problems privately to the maintainers at CONTACT_EMAIL. Reports are kept confidential. If a maintainer is involved, they take no part in handling the report.
+Report problems privately to the maintainers at [pcp-conduct@phantazein.com](mailto:pcp-conduct@phantazein.com). Reports are kept confidential. If a maintainer is involved, they take no part in handling the report.
 
 ## What happens next
 
