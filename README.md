@@ -142,17 +142,17 @@ No implementation claims v0.3 conformance yet. The [conformance suite](https://g
 | Project | Role | License | Status |
 |---|---|---|---|
 | [TomaTío](https://tomatio.ai) | **Reference implementation.** A WordPress plugin that gives teams of people and AI agents a shared memory; serves `team` contexts, with PCP export and import | Open source (GPL) | Implements v0.3 `team` contexts; conformance not yet claimed |
-| [Refugio](https://github.com/Phantazein-apps/refugio) | Local LLM; connects to any PCP context as an MCP client, and can host one on `localhost` | Open source, free | PCP client; local server planned |
+| [Refugio](https://github.com/Phantazein-apps/refugio) | A local AI for the Mac (Ollama) that reaches your own tools over MCP | Open source (MIT) | PCP client planned; it connects only to local stdio MCP servers today, and networked contexts need Streamable HTTP with OAuth (SPEC §3) |
 
 The reference implementation is the one maintainers test the spec against first. It is an implementation like any other: it does not own PCP, has no special standing in decisions, and nothing in the spec depends on it.
 
-### Fully local: PCP + Refugio
+### Planned: fully local with PCP + Refugio
 
-PCP is the *context* refuge; [Refugio](https://github.com/Phantazein-apps/refugio) is the *compute* refuge: a local LLM that never sends data to the cloud. Together they make a fully sovereign setup:
+PCP is the *context* refuge; [Refugio](https://github.com/Phantazein-apps/refugio) is the *compute* refuge: a local LLM that keeps your data on your machine (web search and a cloud model are opt-in). Together they are meant to make a fully sovereign setup. None of it works end to end yet:
 
-- Refugio connects to your PCP endpoint as a standard MCP client, so your local model gets the same memory and profile as Claude on your phone.
-- A PCP server can run on the same machine (`localhost` deployment profile), so nothing leaves your device.
-- Refugio's memory backends (MemPalace, PACK) use the format PCP standardizes, so a Refugio install can become a full PCP context without migrating data.
+- **Refugio as a PCP client.** Refugio connects only to MCP servers it launches over stdio. A context reachable over a network, such as a hosted one, needs Streamable HTTP with OAuth (SPEC §3.1, §3.2), which Refugio does not implement yet. With it, your local model would get the same memory and profile as Claude on your phone.
+- **A PCP server on the same machine.** The spec has a localhost profile (SPEC §9.4), and a runtime on your own device may serve a context over stdio (SPEC §3.1), so nothing would leave your device. Refugio does not host one yet.
+- **Refugio's memory as a PCP context.** Refugio's memory backends (MemPalace, or a Markdown file in a private GitHub repository) do not use PCP's format, and Refugio has no export yet. Mapping them is open work.
 
 ## Get involved
 
