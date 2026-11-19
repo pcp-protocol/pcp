@@ -161,6 +161,7 @@ PCP is the *context* refuge; [Refugio](https://github.com/Phantazein-apps/refugi
 - **Read the spec**: [`SPEC.md`](SPEC.md). Section 11 lists open questions.
 - **Pick something from the roadmap**: [`ROADMAP.md`](ROADMAP.md) lists what each version needs. Issues labelled [`good first issue`](https://github.com/pcp-protocol/pcp/labels/good%20first%20issue) are small and self-contained.
 - **Open an issue**: design questions, gaps, things that don't fit your use case.
+- **Follow the work**: [the project board](https://github.com/orgs/pcp-protocol/projects/1) shows every roadmap issue and its status.
 - **Ask or discuss**: questions and ideas that are not yet an issue belong in [Discussions](https://github.com/pcp-protocol/pcp/discussions).
 - **Build an implementation**: a server, a client, an importer, a conformance test. Running code carries the most weight. Open an issue so we can test interop together.
 - **Host it**: if you run a hosting platform, PCP is designed to be offered alongside email, storage and websites: one context per customer, standard export, no lock-in. We want to hear what you need from the spec.
