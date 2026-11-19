@@ -16,7 +16,7 @@
 
 Your profile, your memory, your connections, behind one URL you control,<br>usable by any AI assistant, on any device, from any vendor.
 
-[Read the spec](SPEC.md) · [Conformance suite](https://github.com/pcp-protocol/pcp/tree/main/conformance) · [Schemas](https://github.com/pcp-protocol/pcp/tree/main/schemas/0.3) · [Implementations](#implementations) · [Get involved](#get-involved)
+[Read the spec](SPEC.md) · [Conformance suite](https://github.com/pcp-protocol/pcp/tree/main/conformance) · [Schemas](https://github.com/pcp-protocol/pcp/tree/main/schemas/0.3) · [Implementations](#implementations) · [Roadmap](ROADMAP.md) · [Get involved](#get-involved)
 
 </div>
 
@@ -133,6 +133,8 @@ A small vocabulary for who holds the keys and who can read the data (`key_custod
 
 This is the right time to shape the protocol. Early feedback changes the spec; later feedback changes v2.
 
+What comes next, version by version: [`ROADMAP.md`](ROADMAP.md).
+
 ## Implementations
 
 Anyone can build a PCP server or client. Listing is open to every implementation, open source or commercial, self-hosted or hosted, and is never an endorsement. Building one? Open a PR to add it.
@@ -157,7 +159,9 @@ PCP is the *context* refuge; [Refugio](https://github.com/Phantazein-apps/refugi
 ## Get involved
 
 - **Read the spec**: [`SPEC.md`](SPEC.md). Section 11 lists open questions.
+- **Pick something from the roadmap**: [`ROADMAP.md`](ROADMAP.md) lists what each version needs. Issues labelled [`good first issue`](https://github.com/pcp-protocol/pcp/labels/good%20first%20issue) are small and self-contained.
 - **Open an issue**: design questions, gaps, things that don't fit your use case.
+- **Ask or discuss**: questions and ideas that are not yet an issue belong in [Discussions](https://github.com/pcp-protocol/pcp/discussions).
 - **Build an implementation**: a server, a client, an importer, a conformance test. Running code carries the most weight. Open an issue so we can test interop together.
 - **Host it**: if you run a hosting platform, PCP is designed to be offered alongside email, storage and websites: one context per customer, standard export, no lock-in. We want to hear what you need from the spec.
 - **Write an extension**: new profile namespaces and connections: see [`extensions/`](https://github.com/pcp-protocol/pcp/tree/main/extensions).
@@ -170,6 +174,7 @@ See [`CONTRIBUTING.md`](https://github.com/pcp-protocol/pcp/blob/main/CONTRIBUTI
 | Path | Contents |
 |---|---|
 | [`SPEC.md`](SPEC.md) | The protocol specification |
+| [`ROADMAP.md`](ROADMAP.md) | What each version needs, and where to help |
 | [`schemas/0.3/`](https://github.com/pcp-protocol/pcp/tree/main/schemas/0.3) | JSON Schemas: discovery, profiles, memory page frontmatter, tools, audit entries, export manifest, erasure receipts |
 | [`examples/0.3/`](https://github.com/pcp-protocol/pcp/tree/main/examples/0.3) | Examples that validate against the schemas (`invalid/` ones must fail) |
 | [`scripts/validate_schemas.py`](https://github.com/pcp-protocol/pcp/blob/main/scripts/validate_schemas.py) | Checks every schema, example and example archive (`pip install jsonschema pyyaml`) |
@@ -195,6 +200,7 @@ PCP is developed in the open by its contributors, in the [`pcp-protocol`](https:
   <em>Your context, behind one URL you control.</em><br><br>
   <a href="https://github.com/pcp-protocol/pcp/blob/main/SPEC.md">Spec</a> ·
   <a href="https://github.com/pcp-protocol/pcp/tree/main/conformance">Conformance</a> ·
+  <a href="https://github.com/pcp-protocol/pcp/blob/main/ROADMAP.md">Roadmap</a> ·
   <a href="https://pcp-protocol.github.io/pcp/">Website</a> ·
   <a href="https://github.com/pcp-protocol/pcp/issues">Issues</a> ·
   <a href="https://github.com/pcp-protocol/pcp/blob/main/GOVERNANCE.md">Governance</a> ·
