@@ -261,6 +261,7 @@ someone makes a strong case in an issue:
   an item up.
 - **To change this page,** open a pull request. Changes to the roadmap are
   editorial: they do not change what implementations must do.
+- **To see what is in progress,** open [the project board](https://github.com/orgs/pcp-protocol/projects/1). It holds every issue in the milestones.
 - **For questions and ideas that are not yet an issue,** use [Discussions](https://github.com/pcp-protocol/pcp/discussions).
 - Maintainers review this page at every release.
 - The detailed list of open questions is SPEC §11. The roadmap sorts those
