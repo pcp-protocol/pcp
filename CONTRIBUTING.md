@@ -2,6 +2,7 @@
 
 PCP is an open specification, and anyone can help shape it. [`GOVERNANCE.md`](GOVERNANCE.md) says how changes are decided, and everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md). While PCP is pre-1.0, the process is deliberately lightweight:
 
+- **Where to start** → [`ROADMAP.md`](ROADMAP.md) lists what each version needs. To propose or move an item, open an issue with the `roadmap` label.
 - **Discussion** → GitHub Issues. One topic per issue. Design questions welcome; see SPEC §11 for the open list.
 - **Changes** → PRs against `SPEC.md` / schemas. Normative changes must state: what breaks, who's affected, migration path.
 - **New extension namespaces** → see [`extensions/README.md`](extensions/README.md).
