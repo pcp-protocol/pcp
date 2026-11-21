@@ -1474,6 +1474,19 @@ Archives use the §2.4 vocabulary in two declarations.
    secrets, and its manifest entry says `credentials_included: false`.
    After a restore the controller authorizes each connection again on the
    new server.
+   - The file validates against
+     [`schemas/0.4/connection.schema.json`](schemas/0.4/connection.schema.json):
+     `id`, `type` and `enabled` are required, `label`, `settings` and
+     `credentials_included` (always `false`) are optional, and nothing else
+     is allowed at the top level.
+   - `settings` MUST NOT hold anything that grants access to the source:
+     no tokens, passwords, keys, cookies or signed URLs, under any name.
+     The schema rejects setting names that look like credentials; that
+     check is a backstop, and an exporter builds the file from the settings
+     it knows, never by copying what it stores.
+   - An importer ignores settings it does not understand, and MUST NOT
+     treat a restored or imported connection as authorized: it cannot be
+     used until the controller authorizes it at its source.
 
 ### 8.6 Versioning
 

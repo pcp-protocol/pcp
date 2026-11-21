@@ -10,7 +10,12 @@ Draft 2020-12, then validates every example under examples/<version>/:
   memory/*.md           frontmatter against memory.page.schema.json
   audit/*.jsonl         each line against audit.entry.schema.json
   tools/<tool>_<input|output>*.json  against tools.schema.json#/$defs/<tool>_<input|output>
+  connections/*.json    against connection.schema.json
   export/<archive>/     every check of SPEC §8.3 (see check_archive below)
+
+Without an argument it checks every version under schemas/, in order. A
+version directory may hold only the schemas that version adds; its
+examples are checked against its own schemas only.
 
 Files under an invalid/ subdirectory must FAIL validation; an archive under
 export/invalid/ must fail at least one archive check.
@@ -23,7 +28,7 @@ without it they are only hashed and counted.
 Frontmatter is parsed with YAML 1.2 core-schema semantics for timestamps
 (they stay strings), as SPEC §5.2 requires.
 
-Usage: python3 scripts/validate_schemas.py [version]   (default 0.3)
+Usage: python3 scripts/validate_schemas.py [version]   (default: every version)
 Requires: pip install jsonschema pyyaml   (optional: cryptography)
 """
 import base64
@@ -38,7 +43,11 @@ from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-VERSION = sys.argv[1] if __name__ == "__main__" and len(sys.argv) > 1 else "0.3"
+VERSIONS = sorted((p.name for p in (ROOT / "schemas").iterdir() if p.is_dir()),
+                  key=lambda v: tuple(int(n) for n in v.split(".")))
+# The version the conformance suite loads when it imports this module
+# (conformance/pcp_conformance); run() switches these per version.
+VERSION = "0.3"
 SCHEMAS = ROOT / "schemas" / VERSION
 EXAMPLES = ROOT / "examples" / VERSION
 
@@ -97,6 +106,8 @@ def target(path):
         return "memory.page.schema.json", None
     if kind == "audit":
         return "audit.entry.schema.json", None
+    if kind == "connections":
+        return "connection.schema.json", None
     if kind == "tools":
         m = re.match(r"([a-z_]+?_(?:input|output))", stem)
         return "tools.schema.json", f"/$defs/{m.group(1)}"
@@ -321,10 +332,24 @@ def check_archive(root, schemas, registry, keys):
     for conn in manifest.get("connections", []):
         if "path" in conn and conn["path"] not in present:
             bad(f"connections: {conn['path']} is missing")
+        elif "path" in conn and "connection.schema.json" in schemas and conn["path"] in plain:
+            validate("connection.schema.json", json.loads(plain[conn["path"]]), conn["path"])
     return problems
 
 
-def main():
+def main(argv):
+    versions = argv or VERSIONS
+    failures = 0
+    for version in versions:
+        failures += run(version)
+    return 1 if failures else 0
+
+
+def run(version):
+    global SCHEMAS, EXAMPLES
+    SCHEMAS = ROOT / "schemas" / version
+    EXAMPLES = ROOT / "examples" / version
+    print(f"== {version}")
     schemas, registry = load_schemas()
     print(f"{len(schemas)} schemas valid (Draft 2020-12): {', '.join(schemas)}")
     failures, checked = 0, 0
@@ -375,8 +400,8 @@ def main():
             note = f"rejected as expected: {problems[0]}" if problems else f"{files} files, hashes and counts check"
             print(f"ok   archive {rel} ({note})")
     print(f"{checked} instances checked, {failures} failures")
-    return 1 if failures else 0
+    return failures
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pcp-protocol.github.io/pcp/schemas/0.4/connection.schema.json",
+  "title": "PCP connection record",
+  "description": "The file connections/<id>.json in an export archive (SPEC §8.5 item 5): a connection's configuration without credentials. Unknown top-level members fail, so a field such as access_token cannot travel unnoticed. Setting names that look like credentials fail too; that is a backstop, not proof that a value holds no secret.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "enabled"],
+  "properties": {
+    "id": {
+      "description": "The connection id (SPEC §6.1 item 2, §6.4): the same id its tools and conn.<id> scopes use.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]{0,15}$",
+      "not": {
+        "enum": ["profile", "memory", "context", "review", "partition", "audit", "export", "erase", "doc", "handoff"]
+      }
+    },
+    "type": {
+      "description": "The kind of service the connection links to, for example notion or imap.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9._-]*$"
+    },
+    "label": {
+      "description": "What a person sees to tell this connection from others of its type.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "enabled": {
+      "description": "Whether the connection was enabled at export time. After a restore it still cannot be used until the controller authorizes it again (SPEC §8.7.2 item 5).",
+      "type": "boolean"
+    },
+    "settings": {
+      "description": "Configuration that does not grant access to the source. Importers ignore settings they do not understand (SPEC §8.5 item 5).",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,63}$",
+        "not": {
+          "pattern": "(token|secret|password|passwd|passphrase|credential|cookie|apikey|api_key|private_key|client_key|bearer)"
+        }
+      },
+      "additionalProperties": {
+        "anyOf": [
+          { "$ref": "#/$defs/scalar" },
+          { "type": "array", "items": { "$ref": "#/$defs/scalar" } }
+        ]
+      }
+    },
+    "credentials_included": {
+      "description": "Always false: no tokens, passwords, keys or cookies for the source travel (SPEC §8.2 item 8).",
+      "const": false
+    }
+  },
+  "$defs": {
+    "scalar": {
+      "type": ["string", "number", "boolean", "null"]
+    }
+  }
+}

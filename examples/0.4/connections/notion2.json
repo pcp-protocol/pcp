@@ -1,0 +1,11 @@
+{
+  "id": "notion2",
+  "type": "notion",
+  "label": "Notion (work workspace)",
+  "enabled": true,
+  "settings": {
+    "read_only": true,
+    "workspaces": ["Engineering", "Hiring"]
+  },
+  "credentials_included": false
+}

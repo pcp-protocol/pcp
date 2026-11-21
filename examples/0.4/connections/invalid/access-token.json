@@ -1,0 +1,7 @@
+{
+  "id": "notion",
+  "type": "notion",
+  "label": "Notion (personal workspace)",
+  "enabled": true,
+  "access_token": "secret-ntn-0000"
+}
