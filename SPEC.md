@@ -1096,7 +1096,9 @@ that tool list could then steer every client of the context.
    framed as §9.6 item 1 says, with `kind="connection"`.
 4. A host SHOULD NOT offer a source's destructive tools (deletes, and
    writes that cannot be undone at the source) unless the person turned
-   them on for that client.
+   them on for that client. Where a host keeps that setting is up to the
+   host; [docs/management-api.md](docs/management-api.md) (informative)
+   sketches the connection and grant endpoints it could sit beside.
 
 ### 6.5 Extension tools and reserved slots
 
