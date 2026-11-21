@@ -7,7 +7,10 @@ the suite (S or S+) that no check cites, fails the self-check.
 import pathlib
 import re
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+# An installed copy carries the files it needs in ./data, laid out like the
+# repository (docs/, schemas/, scripts/). A checkout uses the repository itself.
+_DATA = pathlib.Path(__file__).resolve().parent / "data"
+ROOT = _DATA if _DATA.is_dir() else pathlib.Path(__file__).resolve().parents[2]
 REQUIREMENTS_DOC = ROOT / "docs" / "conformance.md"
 
 ROW = re.compile(r"^\|\s*([A-Z]+-\d+)\s*\|\s*(MUST|SHOULD)\s*\|(.*?)\|\s*([\d., ]+)\s*\|\s*([^|]+?)\s*\|\s*([A-Z+]+)\s*\|\s*$")

@@ -11,7 +11,9 @@ import sys
 import time
 import traceback
 
-from . import __version__, archive
+import os
+
+from . import __version__, archive, report as reportmod
 from .registry import CHECKS, Recorder, Skip, load_requirements, self_check
 from .target import Options, Target
 from .checks import discovery, oauth_flow, tools, memory, team, optional  # noqa: F401 (registers checks)
@@ -89,10 +91,37 @@ def run(args):
             print(_paint(f.status, line, color))
         print(f"\n{summary['pass']} pass, {summary['fail']} fail, {summary['warn']} warn, "
               f"{summary['skip']} skip, {summary['manual']} manual or review (use -v to list)")
-    if args.report:
-        with open(args.report, "w") as fh:
-            json.dump(report, fh, indent=2)
+    if args.report or args.report_md or args.report_dir:
+        full = reportmod.build(reqs, findings, opts, (t._cache.get("doc") or {}), t._cache.get("doc_url"),
+                               args.profile or _profile_of(t), report["duration_s"])
+        full["findings"] = report["findings"]  # the list `run` has always written
+        paths = {}
+        if args.report_dir:
+            os.makedirs(args.report_dir, exist_ok=True)
+            paths["json"] = os.path.join(args.report_dir, "pcp-report.json")
+            paths["md"] = os.path.join(args.report_dir, "pcp-report.md")
+        paths["json"] = args.report or paths.get("json")
+        paths["md"] = args.report_md or paths.get("md")
+        if paths["json"]:
+            with open(paths["json"], "w") as fh:
+                json.dump(full, fh, indent=2)
+                fh.write("\n")
+        if paths["md"]:
+            with open(paths["md"], "w") as fh:
+                fh.write(reportmod.markdown(full) + "\n")
+        for kind in ("json", "md"):
+            if paths[kind]:
+                print(f"report written: {paths[kind]}", file=sys.stderr)
     return 1 if summary["fail"] else 0
+
+
+def _profile_of(t):
+    """The profile the run is for, when the server's own claim names exactly one."""
+    claim = (t._cache.get("doc") or {}).get("conformance")
+    profiles = claim.get("profiles") if isinstance(claim, dict) else claim
+    if isinstance(profiles, list) and len(profiles) == 1:
+        return str(profiles[0])
+    return "unspecified"
 
 
 def _manual(r):
@@ -134,7 +163,7 @@ def cmd_self_check(args):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(prog="pcp_conformance", description="PCP v0.3 conformance suite")
+    p = argparse.ArgumentParser(prog="pcp-conformance", description="PCP v0.3 conformance suite")
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run", help="run the checks against a server")
     r.add_argument("--endpoint", help="the context's MCP endpoint URL")
@@ -157,7 +186,10 @@ def main(argv=None):
     r.add_argument("--insecure", action="store_true", help="do not verify TLS certificates")
     r.add_argument("--timeout", type=int, default=15)
     r.add_argument("--json", action="store_true", help="print the report as JSON")
+    r.add_argument("--profile", help="the profile this run is for (personal or team), recorded in the report")
     r.add_argument("--report", help="also write the JSON report to this file")
+    r.add_argument("--report-md", help="also write a readable Markdown report to this file")
+    r.add_argument("--report-dir", help="write pcp-report.json and pcp-report.md into this directory")
     r.add_argument("-v", "--verbose", action="store_true")
     r.set_defaults(func=run)
     a = sub.add_parser("archive", help="check an export archive (SPEC §8.3)")
