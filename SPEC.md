@@ -1097,6 +1097,13 @@ is, for example "Notion (work)", when a context has two of one type.
    connection under the same id, without credentials (§8.7.2 item 5). An
    import into a context that already has a connection with that id MAY
    give the imported one a new id, and reports the change.
+5. **Clients can read them without parsing titles.** A connection tool MAY
+   carry, in its `_meta`, a member `pcp.connection` whose value is an
+   object with the connection's `id`, `type` and `label`, for example
+   `{"id": "notion2", "type": "notion", "label": "Notion (work)"}`. Its
+   values are those of the connection the tool belongs to. A client that
+   finds the member can use it instead of reading the title; one that does
+   not falls back to the title.
 
 Connection tools are namespaced by connection id (`notes_search`,
 `email_search_threads`, `tasks_create`) and gated by `conn.<id>:read` and
