@@ -1149,10 +1149,32 @@ The only implications are these:
 | `memory:review` | Nothing on its own. Together with `memory:read` it allows resolving proposals the caller can read. |
 
 No `:write` scope implies the matching `:read`, so write-only clients (for
-example an ingestion connector) are possible. No scope implies `audit:read`,
+example an ingestion client) are possible. No scope implies `audit:read`,
 `export:read`, `erase:write`, `conn.*`, `ext.*` or extension namespaces. A server SHOULD NOT
 grant a qualifier scope (`memory.sensitive:*`, `memory:review`) without its
 base scope.
+
+**Scopes for connections that are not there.** A `conn.<id>` scope is
+grantable only for a connection `<id>` that is present and enabled in the
+context at consent time. A connection whose upstream sign-in has expired is
+still present; its tools fail until the person acts (§6.3).
+
+1. A server MUST NOT show on the consent screen (§3.6), or grant, a
+   `conn.<id>` scope that is not grantable: the context has no connection
+   `<id>`, the connection is disabled, or the host does not support it.
+2. A server SHOULD drop such a scope from the request and grant the rest,
+   with the token response's `scope` saying what was granted (RFC 6749
+   §5.1). It answers `invalid_scope` only when nothing grantable is left.
+   Whether a dropped scope named a connection the context does not have,
+   one that is disabled, or one the host does not support is not revealed
+   to the client. A server MAY record a dropped scope in the audit log
+   (§7.5); it need not.
+3. A connection linked or enabled after consent is reachable by a client
+   only through a new consent that names its scope (step-up, §3.5 item 5).
+   No existing grant and no refresh (§3.4 item 6) widens to cover it.
+4. When a connection is removed, the server removes its `conn.<id>` scopes
+   from every grant, so that a later connection given the same id (§6.4)
+   is never reachable under an old grant.
 
 Tokens carry PCP scope strings. A server whose clients cannot request
 granular scopes MAY grant a fixed set, but MUST state that set in the token's
