@@ -1075,8 +1075,30 @@ SHOULD answer with HTTP 403 `insufficient_scope` instead of `forbidden`
 Connection tools are namespaced by connection id (`notes_search`,
 `email_search_threads`, `tasks_create`) and gated by `conn.<id>:read` and
 `conn.<id>:write`. Their annotations set `openWorldHint: true`. Connection
-tool schemas are out of scope for v0.3 (each connector documents its own),
-but the naming and scope-gating rules are normative.
+tool schemas are out of scope for v0.3 (each type of connection documents
+its own), but the naming and scope-gating rules are normative.
+
+**The host writes what the model reads.** A client's model reads tool
+titles, descriptions and server instructions as guidance, so text that a
+source controls must not reach it as such. A host often offers a source's
+tools by relaying them from the source's own MCP server. Whoever can change
+that tool list could then steer every client of the context.
+
+1. A host SHOULD offer connection tools under names, titles and
+   descriptions it wrote itself, and MUST NOT pass on a source's tool
+   titles, tool descriptions, parameter descriptions or server
+   instructions verbatim. Server instructions (§6.6 item 2) never include
+   text from a source.
+2. The annotations of a connection tool are the host's own statement of
+   what the tool does (`readOnlyHint`, `destructiveHint`), never copied
+   from the source.
+3. Results from a connection are connection data: in text content they are
+   framed as §9.6 item 1 says, with `kind="connection"`.
+4. A host SHOULD NOT offer a source's destructive tools (deletes, and
+   writes that cannot be undone at the source) unless the person turned
+   them on for that client. Where a host keeps that setting is up to the
+   host; [docs/management-api.md](docs/management-api.md) (informative)
+   sketches the connection and grant endpoints it could sit beside.
 
 ### 6.5 Extension tools and reserved slots
 
