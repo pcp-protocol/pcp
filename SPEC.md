@@ -1072,6 +1072,32 @@ SHOULD answer with HTTP 403 `insufficient_scope` instead of `forbidden`
 
 ### 6.4 Connection tools
 
+A connection (§1) has an **id**, a **type** and a **label**. The id names
+its tools and scopes. The type says which kind of service it links to, for
+example `notion` or `imap`. The label tells a person which connection it
+is, for example "Notion (work)", when a context has two of one type.
+
+1. **Ids are stable.** A connection's id is chosen when the connection is
+   made and stays the same for the connection's life: a new label, a new
+   sign-in at the source, or a restore (item 4) does not change it. A
+   server MUST NOT give a new connection an id that any grant of the
+   context still names (§7.1).
+2. **Several of one type.** A context MAY have several connections of the
+   same type. RECOMMENDED ids: the type for the first connection of a type,
+   and the type followed by a number from 2 for the next ones (`notion`,
+   `notion2`), since ids cannot contain an underscore (§6.1 item 2). Types
+   SHOULD match the id grammar and leave room for that number.
+3. **People see types and labels, not ids.** The consent screen names each
+   `conn.<id>` scope by the connection's type and label (§3.6 item 4), and
+   the `title` of each connection tool names the connection's label, so a
+   person, and a client showing tool titles, can tell `notion_search` from
+   `notion2_search`.
+4. **Ids survive a move.** An export keeps each connection's id
+   (`connections/<id>.json`, §8.5 item 5), and a restore recreates each
+   connection under the same id, without credentials (§8.7.2 item 5). An
+   import into a context that already has a connection with that id MAY
+   give the imported one a new id, and reports the change.
+
 Connection tools are namespaced by connection id (`notes_search`,
 `email_search_threads`, `tasks_create`) and gated by `conn.<id>:read` and
 `conn.<id>:write`. Their annotations set `openWorldHint: true`. Connection
@@ -1535,8 +1561,10 @@ existing one.
 4. **Audit and receipts.** The audit entries and erasure receipts are
    imported with their ids and times, and the server appends an entry for
    the restore (`channel: "import"`, `action: "import.restore"`).
-5. **Grants and connections** are not restored. Clients are granted again
-   and connections authorized again.
+5. **Grants and connection credentials** are not restored. Clients are
+   granted again. Each connection is recreated from `connections/` under
+   its archived id (§6.4 item 4), with its type, label and settings, and
+   cannot be used until the controller authorizes it again at its source.
 6. **All or nothing.** A restore that fails part way MUST leave the target
    empty.
 
