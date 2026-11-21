@@ -1857,7 +1857,9 @@ indexes and embeddings of it, synced copies, and queued items. So:
 4. A context document that says `connection_data: "live"` (§2.3) commits
    the host to keeping nothing fetched from any of the context's
    connections after the request that fetched it. A host that keeps
-   anything says `kept`, or leaves the field out.
+   anything says `kept`, or leaves the field out. The field is declared
+   per context; a later contract for live and kept data may refine it,
+   including declaring it per connection.
 
 **Special categories.** Under every custody, extension namespaces of a
 special category (`pcp.health`, `pcp.residency`; §4.6 rule 4) MUST be
