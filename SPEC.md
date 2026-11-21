@@ -1062,6 +1062,7 @@ arguments that are not an object.
 | `rate_limited` | Too many calls |
 | `locked` | The context's keys are not available for this request right now (§9.1.5) |
 | `unsupported` | An optional feature or verb the server does not implement |
+| `action_required` | A connection cannot be used until the person acts on it in their host: its sign-in at the source expired or was revoked, or the connection is disabled (with `connection`) |
 | `internal` | Anything else |
 
 Reads of pages in partitions the caller cannot read, and of sensitive pages
@@ -1069,6 +1070,21 @@ without `memory.sensitive:read`, MUST produce `not_found`, never `forbidden`
 (writes: §5.2.2). When a token lacks a scope the tool always needs, a server
 SHOULD answer with HTTP 403 `insufficient_scope` instead of `forbidden`
 (§3.5).
+
+**Connections that need the person.** When a connection tool (§6.4) cannot
+run until the person acts on the connection in their host, the server
+answers `action_required`, and its `structuredContent.error` carries
+`connection` with the connection's id. The error's text and structured
+content MUST NOT carry anything the source returned: no status text, no
+account names, no error bodies. The host shows the details to the person
+in its own interface; a client tells the person to reconnect that
+connection in their host. Where the client supports URL-mode elicitation,
+the server MAY first ask the person to reconnect that way (§3.4 item 3),
+and answers `action_required` when the person does not. A source that
+fails for reasons the person cannot fix (an outage, its own rate limit)
+gets `internal` or `rate_limited`, with the same rule on what the text
+carries. `action_required` is about one connection; `locked` is about the
+context's own keys (§9.1.5).
 
 ### 6.4 Connection tools
 
