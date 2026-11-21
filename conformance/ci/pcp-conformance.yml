@@ -1,0 +1,73 @@
+# Copy this file to .github/workflows/pcp-conformance.yml in your repository
+# and change the three lines marked CHANGE. It installs the PCP conformance
+# suite, starts your server, runs the suite against it, and keeps the report
+# as a build artifact. See conformance/github-actions.md in the PCP repository.
+name: pcp-conformance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  # CHANGE: the suite version to run. A tag or a commit of pcp-protocol/pcp.
+  # "main" always runs the newest suite; pin a tag for a claim you publish.
+  PCP_SUITE_REF: main
+  # CHANGE: the profile you are checking: personal or team.
+  PCP_PROFILE: personal
+  # CHANGE: the MCP endpoint your server serves in this job.
+  PCP_ENDPOINT: http://127.0.0.1:8080/mcp
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the suite
+        run: pip install "git+https://github.com/pcp-protocol/pcp@${PCP_SUITE_REF}"
+
+      # CHANGE: whatever starts your server on the port above, on a throwaway
+      # context with test data only. It must approve test authorizations
+      # without a person, the way the reference server does in --test-mode.
+      - name: Start the server
+        run: |
+          ./run-my-server.sh --port 8080 &
+          echo $! > server.pid
+
+      - name: Wait for the server
+        run: |
+          # Any HTTP answer, even 401, means the server is up.
+          for i in $(seq 1 60); do
+            curl -s -o /dev/null "$PCP_ENDPOINT" && exit 0
+            sleep 0.5
+          done
+          echo "server did not start"; exit 1
+
+      - name: Run the suite
+        run: |
+          pcp-conformance run \
+            --endpoint "$PCP_ENDPOINT" \
+            --profile "$PCP_PROFILE" \
+            --allow-writes --allow-register \
+            --report-dir report
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pcp-conformance-report
+          path: report/
+          if-no-files-found: warn
+
+      - name: Stop the server
+        if: always()
+        run: kill "$(cat server.pid)" 2>/dev/null || true

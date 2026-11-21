@@ -114,6 +114,12 @@ suite against four deliberately broken builds of the server
 must make the suite fail on the requirement it breaks. CI runs the same
 script.
 
+## In CI
+
+[`github-actions.md`](github-actions.md) has a workflow file to copy into your
+own repository: it installs the suite, starts your server, runs the suite and
+keeps the report as a build artifact.
+
 ## Coverage rules
 
 ```bash
