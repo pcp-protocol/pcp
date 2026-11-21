@@ -207,8 +207,6 @@ GET /.well-known/pcp.json
   "controller_type": "human",
   "mcp_endpoint": "https://ctx.example.com/mcp",
   "resource_metadata": "https://ctx.example.com/.well-known/oauth-protected-resource/mcp",
-  "profile_extensions": ["pcp.health"],
-  "connections": ["notes"],
   "conformance": ["personal"],
   "export": true,
   "encryption": {
@@ -263,11 +261,12 @@ Clients MUST ignore fields they do not understand.
 | `encryption` | REQUIRED | absent | Key custody and who can read plaintext (§2.4, §9.1) |
 | `multi_context` | absent | REQUIRED, `true` | Marks a root document |
 | `context_url_template` | absent | REQUIRED | URI Template for context base URLs (§2.2) |
+| `connection_types` | OPTIONAL | OPTIONAL | Types of connection the host offers to every context it serves (§6.4), each matching the connection id grammar of §6.1 item 2, the same list in every document of the host. Never what one context has |
 | `authorization_server` | OPTIONAL, deprecated | OPTIONAL, deprecated | Kept from v0.2 as a hint. If present it MUST equal the entry of `authorization_servers` in the context's protected resource metadata. Clients MUST discover the authorization server from that metadata (§3.2), never from this field |
 | `server_card` | OPTIONAL | OPTIONAL | URL of the MCP server card for the endpoint |
 | `profile` | OPTIONAL | absent | `core`, `team` or `none` (§4). Default: `core` for personal and work, `team` for team |
-| `profile_extensions` | OPTIONAL | absent | Extension namespaces present (§4.5), so clients can request the right scopes |
-| `connections` | OPTIONAL | absent | Connection ids present (§6.4) |
+| `profile_extensions` | OPTIONAL, absent for `personal` | absent | Extension namespaces present (§4.5), so clients can request the right scopes |
+| `connections` | OPTIONAL, absent for `personal` | absent | Connection ids present (§6.4) |
 | `extensions` | OPTIONAL | absent | Tool extensions implemented, by reverse-DNS id (§6.5) |
 | `features` | OPTIONAL | absent | Optional features in use: `partitions`, `review`, `delegation` (§1.4) |
 | `conformance` | OPTIONAL | absent | Conformance profiles claimed: `personal`, `team` (§10) |
@@ -279,6 +278,27 @@ Servers SHOULD NOT emit it, and clients MUST ignore it (§3.1).
 Discovery documents are public. They MUST NOT contain content (§9.1.1),
 names, email addresses or any other personal data beyond what the context
 URL itself shows.
+
+**What a personal context has linked is personal data.** Which services a
+person connected (a mailbox, a health app, a bank) and which extension
+namespaces hold data about them (`pcp.health`) say something about that
+person, and context URLs can be guessed, more so on a multi-context host
+(§2.2). So:
+
+1. The context document of a `personal` context MUST NOT carry
+   `connections` or `profile_extensions`. A `work` context SHOULD NOT carry
+   them either. A `team` context MAY.
+2. `connection_types`, where present, lists what the host offers, not what
+   any context linked: it MUST be the same in the root document and in
+   every context document of the host, and MUST NOT change when a context
+   adds or removes a connection.
+3. A client does not need either list to connect (§2.5). It MAY request
+   `conn.<id>` and `profile.<ns>` scopes without knowing whether the context
+   has them; the server grants only what the context has and the person
+   approves (§3.6, §7.1). After authorization the client learns the
+   context's connections from `tools/list`. A server SHOULD list a
+   connection's tools there even to a token that cannot call them, so the
+   client can step up for their scopes (§3.5 items 4 and 5).
 
 ### 2.4 Encryption vocabulary
 
