@@ -86,6 +86,16 @@ up to three parts:
 | **Memory** | Long-term memory as Markdown pages with YAML frontmatter: lifecycle, validity, provenance, and for teams partitions and review state | §5 |
 | **Connections** | Live bridges to external sources (notes, email, tasks) exposed as namespaced MCP tools | §6.4 |
 
+A **connection** is a context's link to another service, the connection's
+**source**; the tools it adds are connection tools (§6.4). The AI app that
+reads and writes the context through MCP is a **client** (§3.3). Hosts often
+say "connector" in their own interfaces for a connection or for a type of
+connection, and AI apps often call a PCP server itself a "connector"; this
+specification says connection, source and client. Two older uses keep their
+names: the page frontmatter key `source` (§5.2.1) records where a page came
+from, not a connection's source, and its `origin` value `connector` means a
+connection.
+
 A **PCP server** is any server that stores one or more contexts and serves
 each over MCP per §3. It MAY be self-hosted (localhost, home server), run by
 a hosting provider, or run as managed SaaS. The wire behavior is identical.
