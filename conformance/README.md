@@ -14,21 +14,34 @@ the report as manual; a conformance claim covers them by a person's check.
 
 ## Install
 
+One command, from anywhere, with Python 3.10 or later:
+
+```bash
+pipx install "git+https://github.com/pcp-protocol/pcp"
+```
+
+or, in a virtual environment you already have, `pip install "git+https://github.com/pcp-protocol/pcp"`. Add `@<tag>` to pin the suite version a claim names. This installs the `pcp-conformance` command with the requirement list and the schemas it checks against bundled in, so it needs no checkout. To check JWE-encrypted export archives, add the `cryptography` package (an optional extra: `pip install "pcp-conformance[jwe] @ git+https://github.com/pcp-protocol/pcp"`).
+
+Working from a clone instead, as before:
+
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r conformance/requirements.txt
 ```
 
-Python 3.10 or later. The suite uses the standard library for HTTP and
-`jsonschema` and `pyyaml` for the schemas in [`schemas/0.3/`](../schemas/0.3/).
+The suite uses the standard library for HTTP and `jsonschema` and `pyyaml`
+for the schemas in [`schemas/0.3/`](../schemas/0.3/).
 
 ## Run it
 
-From the `conformance/` directory:
+Against a server, writing a report a claim can link to:
 
 ```bash
-python3 -m pcp_conformance run --endpoint https://ctx.example.com/mcp
+pcp-conformance run --endpoint https://ctx.example.com/mcp --profile personal --report-dir report
 ```
+
+From a clone, in the `conformance/` directory, the same suite runs as
+`python3 -m pcp_conformance run ...` with the same options.
 
 By default the suite is **read-only**: it fetches discovery and metadata,
 sends unauthenticated and invalid requests, and registers nothing. Checks
@@ -47,7 +60,9 @@ that need more say so and are skipped. Widen it with:
 | `--scan-path DIR` | The server's data directory. Under `user` custody the suite writes a canary and searches every file for it (KEY-05). |
 | `--revocation-wait S` | How long to wait for a revoked grant to stop working (default 300, the SPEC's bound). |
 | `--only IDS` | Run only the checks that cite these ids. |
-| `--json`, `--report FILE` | A JSON report. |
+| `--profile personal\|team` | The profile the run is for, written into the report. Without it the report uses the server's own claim when it names exactly one profile, else `unspecified`. |
+| `--json` | Print the report to standard output as JSON instead of the readable list. |
+| `--report FILE`, `--report-md FILE`, `--report-dir DIR` | Write the JSON report, the Markdown report, or both (`DIR/pcp-report.json` and `DIR/pcp-report.md`). The report is written even when a check fails. |
 
 The exit status is 1 if any MUST failed. A failed SHOULD is a warning. A
 skipped check is not a pass: SPEC §10.3 says how skipped requirements count
@@ -65,6 +80,20 @@ python3 -m pcp_conformance roundtrip a.pcp.zip b.pcp.zip --cross   # across impl
 repeated names, as an importer must) and runs the same checks as
 [`scripts/validate_schemas.py`](../scripts/validate_schemas.py). Pass
 `--keys` with a JSON key file to check file-level JWE content.
+
+## The report
+
+The JSON report records the suite name and version, the PCP version (`spec_version`), the profile, the date and time of the run, the endpoint, the options used (tokens are never written), and one entry per requirement id in `docs/conformance.md` under `requirements`. Each entry has the id, level, section, the profile column, how it is checked, and its `status`:
+
+| Status | Meaning |
+|---|---|
+| `pass` | Checked and met. |
+| `fail` | A MUST was not met. The exit status is 1. |
+| `warn` | A SHOULD was not met. |
+| `skip` | The check could not run, for example for lack of an option or a feature the server does not use. Not a pass: see SPEC §10.3. |
+| `manual` | Not checkable from outside (`M`, `R`, and `A` requirements); a person checks it. |
+
+`requirement_summary` counts the entries by status. The older `findings` list, one row per check result, is still written. The Markdown report holds the same header, the counts, every failure, warning and skip with its message, and the ids that passed, so it can be linked from a claim or attached to a build. A claim links the report and names the same suite version, PCP version and profile.
 
 ## The reference server
 

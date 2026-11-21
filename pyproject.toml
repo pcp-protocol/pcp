@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pcp-conformance"
+dynamic = ["version"]
+description = "Black-box conformance suite for PCP (Portable Context Protocol) servers"
+readme = "conformance/README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = ["jsonschema>=4.18", "pyyaml>=6.0"]
+
+[project.optional-dependencies]
+jwe = ["cryptography>=42"]
+
+[project.scripts]
+pcp-conformance = "pcp_conformance.__main__:main"
+
+[tool.setuptools]
+packages = ["pcp_conformance", "pcp_conformance.checks"]
+package-dir = { "" = "conformance" }
+
+[tool.setuptools.dynamic]
+version = { attr = "pcp_conformance.__version__" }
