@@ -1167,7 +1167,8 @@ still present; its tools fail until the person acts (§6.3).
    §5.1). It answers `invalid_scope` only when nothing grantable is left.
    Whether a dropped scope named a connection the context does not have,
    one that is disabled, or one the host does not support is not revealed
-   to the client.
+   to the client. A server MAY record a dropped scope in the audit log
+   (§7.5); it need not.
 3. A connection linked or enabled after consent is reachable by a client
    only through a new consent that names its scope (step-up, §3.5 item 5).
    No existing grant and no refresh (§3.4 item 6) widens to cover it.
