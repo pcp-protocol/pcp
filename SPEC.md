@@ -2098,8 +2098,9 @@ custody in a `host` or `user` context.
    - its content is encrypted under partition keys of its own, never under
      a key that the wider custody lets the host use;
    - no index, embedding, cache, queue or worker of another partition holds
-     its content (U4), and a search across partitions decrypts or ranks the
-     sealed partition's part only as its custody allows;
+     its content (U4). One search MAY rank results from a sealed partition
+     together with others, but only inside a request that decrypts the
+     sealed part, never through an index the host can read on its own;
    - U6 and V1 apply to the access list too: removing a principal's `read`
      on the partition, or the principal, deletes every copy of the
      partition key wrapped for them, and the partition key is rotated as
@@ -2115,8 +2116,8 @@ custody in a `host` or `user` context.
    encrypts it under the partition's keys and deletes the readable copies
    the wider partition held, including derived data; backups age out as
    §9.1.8 says for erasure. Moving a page out of a sealed partition makes
-   it readable by the parties of the target partition. Both are audited
-   like any write.
+   it readable by the parties of the target partition; a client MAY warn
+   before it does. Both are audited like any write.
 6. **Reaching a sealed partition.** A host component that cannot decrypt a
    partition treats its pages as locked (§9.1.5 item 2) and reveals no
    content. How a client reaches the pages of a partition under `device`
