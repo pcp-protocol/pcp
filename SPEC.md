@@ -291,7 +291,7 @@ reviewer can check.
 |---|---|---|
 | `key_custody` | `host` | The host holds keys that decrypt the context without any principal taking part. This includes storage that is encrypted on disk with host-held keys. |
 | | `user` | The keys are wrapped by secrets only the context's principals, and clients they authorized, hold. The host can decrypt only while serving a request that a principal authorized, and keeps neither keys nor plaintext afterwards. |
-| | `device` | Plaintext and keys exist only on principals' devices. The host stores and serves ciphertext. |
+| | `device` | Plaintext and keys exist only on principals' devices, machines the principals control (§9.1.4 V1). The host stores and serves ciphertext. |
 | `readable_by` | array of `principals`, `host_in_request`, `host`, `escrow` | Every party that can obtain plaintext. `principals` (authorized principals through their clients) is always listed. `host_in_request`: the host, only while serving an authorized request. `host`: the host at any time. `escrow`: a third party holding a recovery share. |
 | `e2e` | boolean, default `false` | End-to-end encrypted. MAY be `true` only when `key_custody` is `device`. |
 
@@ -1931,6 +1931,18 @@ A server declares `device` only if:
   exist only on devices of principals, and in the clients principals
   authorized to receive results. The host stores, syncs and serves
   ciphertext, and its own components never hold a key.
+
+  In this subsection, a **principal's device** is a machine the principal
+  controls: the principal holds its administrative credentials, and the
+  host can neither sign in to it nor change its software. A phone, a laptop
+  or a home server qualifies. A machine the principal rents qualifies too,
+  if the host is not its provider; the server's documentation then names the
+  provider, as it names a subprocessor (§9.1.2 item 1). A node the host
+  operates is not a principal's device, whatever it runs, and neither is a
+  machine the host rents to the principal. A server that serves a context
+  through such a node declares the custody that then holds, `user` (§9.1.3)
+  or `host` (§9.1.2). A node in an attested enclave is not a principal's
+  device either (see below).
 - **V2. The MCP endpoint is on a device.** A runtime on a principal's
   device answers MCP requests. When a remote client reaches it through a
   host relay, the relay MUST NOT be able to read requests or responses:
