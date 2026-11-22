@@ -565,6 +565,9 @@ supplied by the client itself and is not verified.
     access list, and `partition_list` (§6.2) returns only the grant's
     partitions. Narrowing removes partitions from the list, or limits an
     unlimited grant to some partitions. Adding a partition is widening.
+    This item sets the list on the management surface only; how a client
+    requests a partition list in OAuth (RFC 9396) is an open question
+    (§11).
 
 Sender-constrained tokens (DPoP) are deferred to v0.4.
 
