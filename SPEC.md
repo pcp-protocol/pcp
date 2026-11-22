@@ -2142,7 +2142,8 @@ controls.
 1. **Remove the principal.** The controller MUST be able to remove a
    principal at once. Removal revokes every grant of that principal (their
    tokens stop working within the bound of §3.4 item 5), deletes every key
-   copy wrapped for them and rotates context keys as §9.1.7 item 2 says,
+   copy wrapped for them, of context keys and of partition keys (§9.2.5
+   item 3), and rotates those keys as §9.1.7 item 2 says,
    ends any delegation to or from them (§7.4), and sets their status to
    `removed` in the context descriptor (§8.2 item 5). The principal id is
    never reused: a server whose ids come from reusable account names keeps
@@ -2170,6 +2171,40 @@ controls.
    hold keeps is reported as residue in the receipt.
 5. **Audit.** Removal, the leaver export and principal erasure are audited
    (`principal` category).
+
+#### 9.2.5 Sealed partitions in organization-controlled contexts
+
+A **sealed partition** is a partition whose own `encryption` declares
+`user` or `device` custody while the context's is wider (§9.1.9). In an
+organization-controlled context (a work context with `controller_type:
+"org"`, or a team context an organization administers), sealing keeps a
+partition from the host, not from the controller: retention, legal holds,
+audit and offboarding (§9.2.4) keep working for it.
+
+1. **The controller can reach the keys.** Every partition key of a sealed
+   partition MUST be held under the context's controller: at least one
+   copy is wrapped for a principal the controller appoints for it, who
+   then has `read` on the partition (§7.3), or for an escrow holder the
+   controller names, which the partition's `readable_by` lists as `escrow`
+   (§9.1.6). The principal who seals a partition MUST be told, when it is
+   set up and on the management surface, who else can read it, as §9.2.1
+   item 2 says for the context.
+2. **No personal key holder alone.** A personal context MUST NOT be the
+   only key holder for a partition of an organization-controlled context.
+   A copy that only a secret of a personal context opens, or that only a
+   personal context's key store or runtime holds, does not count for
+   item 1.
+3. **Offboarding.** Removing a principal (§9.2.4 item 1) deletes every copy
+   of a partition key wrapped for them, and rotates every partition key
+   they could unwrap, as §9.1.7 item 2 says for a context key. The copy of
+   item 1 lets the rotation run without the person who left, and nothing
+   they sealed is lost to the controller.
+4. **The last holder.** A server MUST NOT seal a partition unless item 1
+   holds, and MUST refuse to remove the last principal or escrow holder
+   that item 1 relies on for a partition until another holds a copy.
+
+Personal contexts and work contexts the person controls are unaffected:
+their controller is the principal (§9.2.1).
 
 ### 9.3 Network-facing endpoints
 
