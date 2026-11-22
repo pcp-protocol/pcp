@@ -2140,7 +2140,10 @@ component it runs can decrypt: the pages of a sealed partition under
 syncs for a context under `device` custody (§9.1.4 V3 and V4). A device
 that holds the key reads and writes them through the server's MCP
 endpoint, as a client. A client can tell which partitions hold sealed
-pages from the `encryption` that `partition_list` returns (§6.2).
+pages from the `encryption` that `partition_list` returns (§6.2). A
+server that can decrypt a page in the request, as under `user` custody
+(§9.1.3 U2), serves it in plaintext, and a client cannot ask it for a
+sealed page instead.
 
 1. **Shape.** A sealed page has, as its frontmatter, the readable metadata
    of §9.1.1 that applies to a page: `id`, `partition`, `updated`,
@@ -2177,8 +2180,8 @@ pages from the `encryption` that `partition_list` returns (§6.2).
    sealed page's path. `memory_read` finds a sealed page by `id` only, and
    path filters (`memory_read` by `path`, `memory_list` by prefix) do not
    see it. The rules of §5.1 then hold for clients: a client checks a path
-   before it seals it, and keeps paths unique among the pages it can
-   read. A reader that finds two sealed pages with one path keeps both and
+   before it seals it, and keeps paths unique within the sealed
+   partition. A reader that finds two sealed pages with one path keeps both and
    tells the person.
 4. **Reading.** `memory_read` and `memory_list` return sealed pages as
    such. `memory_read` returns the readable frontmatter and `sealed`, and
@@ -2224,7 +2227,8 @@ pages from the `encryption` that `partition_list` returns (§6.2).
 9. **What the host can still do** (informative). The scheme authenticates
    the ciphertext, so the host cannot read or change a sealed page
    unnoticed. It can still withhold a page, refuse a write, or serve an
-   older version of a page.
+   older version of a page; a reader has no standard way to detect an
+   older version yet.
 10. **Keys.** How a device resolves a `key_id` is not defined here: which
     principals' device public keys a key is wrapped for, and how a device
     adds a wrapped copy for another member's device (§11). Until it is,
