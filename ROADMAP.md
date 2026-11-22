@@ -14,7 +14,7 @@ describes, and anyone can propose a change to this page (see
 |---|---|---|
 | [v0.3](https://github.com/pcp-protocol/pcp/releases/tag/v0.3) | The first version independent implementations can build against | Released |
 | [v0.3.x](#v03x-prove-it) | Prove it: first conformance claims, first round trip between two implementations | In progress |
-| [v0.4](#v04-connections) | Connections: a context's links to other services, made safe and checkable | Issues open, help wanted |
+| [v0.4](#v04-connections) | Connections: a context's links to other services, made safe and checkable | Proposals open for comment, help wanted |
 | [v0.5](#v05-trust-you-can-check) | Trust you can check: signatures, stronger tokens, a standard management surface, a client profile | Open for proposals |
 | [v0.6](#v06-between-contexts) | Between contexts: sharing, moving hosts without reconnecting, merging | Open for ideas |
 | [v1.0](#v10-stable) | Stable: a compatibility promise | Criteria drafted |
@@ -84,7 +84,8 @@ share no maintainer with this repository are the strongest evidence.
 **Goal:** a connection is a context's link to another service, such as a
 mailbox, a calendar or a notes app. v0.3 names connections and reserves
 their scopes, and leaves most of their behavior open. v0.4 closes that, and
-takes in what the first implementers learned.
+takes in what the first implementers learned, including gaps in key custody
+found while designing a runtime on a person's own device.
 
 Connections:
 
@@ -107,7 +108,26 @@ Connections:
 - One vocabulary: connection, source, client
   ([#28](https://github.com/pcp-protocol/pcp/issues/28)).
 - A contract for how connection data enters a context: fetched live, or
-  synced and kept (SPEC §11).
+  synced and kept
+  ([#40](https://github.com/pcp-protocol/pcp/issues/40)).
+
+Key custody and sealed content:
+
+- Under `device` custody, a grant counts only once a principal approves it
+  on one of their devices, so a host cannot issue itself a token
+  ([#83](https://github.com/pcp-protocol/pcp/issues/83)).
+- What counts as a principal's device
+  ([#84](https://github.com/pcp-protocol/pcp/issues/84)).
+- Key custody per partition, so one partition of a context can be sealed
+  while the rest stays readable by the host
+  ([#85](https://github.com/pcp-protocol/pcp/issues/85)).
+- Sealed pages: a shape for pages the server stores and cannot read
+  ([#86](https://github.com/pcp-protocol/pcp/issues/86)), and a way to share
+  their keys with a new device
+  ([#95](https://github.com/pcp-protocol/pcp/issues/95)). Both need running
+  code before they merge.
+- Who may hold the keys of a sealed partition in a context an organization
+  controls ([#88](https://github.com/pcp-protocol/pcp/issues/88)).
 
 Import, memory and management:
 
@@ -116,9 +136,14 @@ Import, memory and management:
   ([#17](https://github.com/pcp-protocol/pcp/issues/17)).
 - Narrowing a grant without a new consent, in the informative management API
   ([#24](https://github.com/pcp-protocol/pcp/issues/24)).
+- A change feed, so a client that keeps its own copy can ask what changed
+  since its last sync, removals included
+  ([#87](https://github.com/pcp-protocol/pcp/issues/87)).
 - A decision on memory conflicts: are `relations` enough, or does a server
-  need a merge and supersession rule (SPEC §11)?
-- A decision on pages that belong to several partitions (SPEC §11).
+  need a merge and supersession rule
+  ([#42](https://github.com/pcp-protocol/pcp/issues/42))?
+- A decision on pages that belong to several partitions
+  ([#43](https://github.com/pcp-protocol/pcp/issues/43)).
 
 Extensions:
 
@@ -138,7 +163,9 @@ reason, the suite passes on the reference server, and each new requirement
 has been run by at least one real implementation.
 
 **Help wanted:** if you build connectors, or run a service that hosts them,
-comment on the connection issues. The namespace schemas are a good first
+comment on the connection issues. If you build a runtime that holds keys on
+a device, comment on the custody issues, and on the encryption format for
+sealed pages most of all. The namespace schemas are a good first
 contribution to the specification.
 
 ## v0.5: Trust you can check
