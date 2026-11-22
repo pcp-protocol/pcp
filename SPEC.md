@@ -2176,8 +2176,8 @@ controls.
 
 A **sealed partition** is a partition whose own `encryption` declares
 `user` or `device` custody while the context's is wider (§9.1.9). In an
-organization-controlled context (a work context with `controller_type:
-"org"`, or a team context an organization administers), sealing keeps a
+organization-controlled context (`controller_type: "org"`, §9.2.1, in a
+work or a team context), sealing keeps a
 partition from the host, not from the controller: retention, legal holds,
 audit and offboarding (§9.2.4) keep working for it.
 
