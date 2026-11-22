@@ -181,7 +181,7 @@ See [`CONTRIBUTING.md`](https://github.com/pcp-protocol/pcp/blob/main/CONTRIBUTI
 | [`scripts/validate_schemas.py`](https://github.com/pcp-protocol/pcp/blob/main/scripts/validate_schemas.py) | Checks every schema, example and example archive (`pip install jsonschema pyyaml`) |
 | [`conformance/`](https://github.com/pcp-protocol/pcp/tree/main/conformance) | The conformance suite, its reference server, and the archive checker |
 | [`extensions/`](https://github.com/pcp-protocol/pcp/tree/main/extensions) | Extension namespace registry and authoring guide |
-| [`docs/`](https://github.com/pcp-protocol/pcp/tree/main/docs) | The conformance requirements, and informative guides: interop with other memory formats, management API, networking, profile bootstrap, style profiles |
+| [`docs/`](https://github.com/pcp-protocol/pcp/tree/main/docs) | The conformance requirements, the [errata](docs/errata.md), and informative guides: interop with other memory formats, management API, networking, profile bootstrap, style profiles |
 | [`SECURITY.md`](SECURITY.md) | Threat model and best practices for self-hosters and hosts |
 | [`CONTRIBUTING.md`](https://github.com/pcp-protocol/pcp/blob/main/CONTRIBUTING.md) | How to help |
 | [`GOVERNANCE.md`](GOVERNANCE.md) | How spec changes are proposed and decided |
