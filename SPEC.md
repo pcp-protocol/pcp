@@ -800,6 +800,7 @@ REQUIRED: `title`, `updated`.
 | `on_behalf_of` | principal id | Server-stamped. The human an agent acted for (§7.4). |
 | `client` | string | Server-stamped. The client that created the page (OAuth `client_id` or client name). |
 | `session` | string | Client-supplied conversation or run id. |
+| `connection` | connection id | The connection a kept page came from (§6.7). Set with `origin: connector`. |
 | `at` | RFC 3339 date or date-time | When the source event happened. |
 
 #### 5.2.2 Writing frontmatter
@@ -1118,6 +1119,71 @@ MUST still respect partitions, sensitivity and the audit rules.
    2026-07-28) carry `cacheScope: "private"`, with a short `ttlMs`
    (RECOMMENDED at most 60 seconds for `tools/list`).
 4. **Tool lists** follow §3.5 item 4.
+
+### 6.7 Live and kept connection data
+
+Each connection (§6.4) has a **data mode**, which says what the host
+stores of what the connection brings in:
+
+- `live`: the host fetches from the source during a request and keeps
+  nothing it fetched after that request.
+- `kept`: the host keeps data from the source after the request that
+  fetched it: synced copies, pushed items, caches or indexes.
+
+There are only these two modes. The mode says what the host stores, not
+who starts the transfer: a host that pulls on a schedule and a source that
+pushes to the host are both `kept`.
+
+1. **Declaration.** A server MUST declare each connection's mode, and
+   MUST show it only to callers authorized for the connection (§2.3): in the
+   member `pcp.connection` of the connection's tools' `_meta`, as `data`
+   (§6.4), and to the controller on the management surface. The
+   context-level `connection_data` (§2.3, §9.1.1) states the widest case:
+   `live` only when every connection is `live`, and `kept` when any is.
+2. **What a tool returns is a page or a record.** Anything kept that a
+   tool other than the connection's own tools can return is stored as a
+   page or as an extension record (§8.5), and carries the id of the
+   connection it came from: a page has `source.origin: connector` and
+   `source.connection: <id>`; a record carries the id in its provenance.
+   Caches and indexes that only serve the connection's own tools stay
+   caches: they are content (§9.1.1), are left out of archives (§8.2
+   item 8), and erasure reaches them.
+3. **Kept pages are reference pages.** Kept data enters as reference
+   pages, as for a reference import (§8.7.3 item 2): approved, with
+   `lifecycle: stale`, never as proposals. A principal promotes a kept
+   page as it promotes any reference page. A later sync updates or
+   removes only pages whose latest change is its own; once a principal
+   changes a kept page, syncs leave it alone.
+4. **Audit.** For a `live` connection, the entry for each tool call (§7.5)
+   is the record. For a `kept` connection, the host also writes one entry
+   per sync run, under a server principal (`service:sync`), like the
+   retention sweep (§8.10 item 2): `channel: "system"`,
+   `action: "connection.sync"`, `categories: ["conn.<id>", "memory"]`, and
+   `counts` (`written`, `deleted`). Items a source pushes are counted in
+   the run that stores them.
+5. **Custody.** A sync runs under the context's custody (§9.1.1, data kept
+   from connections, item 1). Where the custody leaves the host no key
+   outside an authorized request, a connection cannot sync in the
+   background.
+6. **Switching modes.** Only the controller switches a connection from
+   `live` to `kept`, as an explicit act on the management surface. The
+   switch is audited (`channel: "management"`,
+   `action: "connection.data"`, `categories: ["conn.<id>"]`). A switch
+   from `kept` to `live` stops syncs, and the host offers the deletion of
+   item 7 for the data already kept.
+7. **Removing a connection.** When a connection with kept data is
+   removed, the host MUST offer to delete what it kept from it, and MUST
+   say what happens: how many pages and records it holds from the
+   connection, that deleting them is the default, that pages and records
+   not deleted stay in the context and are no longer synced, and that
+   nothing at the source is changed. Deleting them is a deletion
+   (§8.10 item 3), audited like any other, not an erasure (§8.9).
+8. **Export and restore.** An export holds a `kept` connection's pages and
+   records like any others, and the connection's configuration as §8.5
+   item 5 says. A restore recreates every connection as `live`; the
+   controller switches it to `kept` again (item 6).
+9. **Change feed.** Kept pages appear in `memory_changes` (§5.8) like any
+   other page, and pages a sync removes appear as removals.
 
 ## 7. Scopes, consent and audit
 
@@ -2407,8 +2473,7 @@ archives the server has restored, and that has restored the server's.
 
 - **Federation:** can two contexts share scoped context with each other, for
   example within a family?
-- **Connections:** a push or pull ingestion contract, and schemas for
-  connection tools.
+- **Connections:** schemas for connection tools.
 - **Reserved namespaces:** writing the schemas for `pcp.residency`,
   `pcp.legal`, `pcp.family`, `pcp.finance` and `pcp.home`, which stay empty
   until then (§4.6 rule 5).
