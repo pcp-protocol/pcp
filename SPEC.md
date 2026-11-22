@@ -1025,6 +1025,11 @@ schema. `openWorldHint` is `false` for every standard tool.
 | `audit_list` | List access log | `audit:read` | yes | no | yes | Always |
 | `export_create` | Export context | `export:read` | yes | no | no | Optional (§8.1 item 2) |
 | `erase_request` | Erase memory | `erase:write` | no | yes | yes | Optional (§8.9.4) |
+| `device_register` | Register device | `memory:read` | no | no | yes | The context, or a partition, declares `device` custody (§9.1.11) |
+| `device_remove` | Remove device | `memory:read` | no | yes | yes | The context, or a partition, declares `device` custody (§9.1.11) |
+| `key_list` | List keys | `memory:read` | yes | no | yes | The context, or a partition, declares `device` custody (§9.1.11) |
+| `key_wrap` | Add wrapped key copies | `memory:read` | no | no | yes | The context, or a partition, declares `device` custody (§9.1.11) |
+| `key_rotate` | Rotate key | `memory:write` | no | no | no | The context, or a partition, declares `device` custody (§9.1.11) |
 
 Behavior beyond the schemas:
 
@@ -1061,6 +1066,10 @@ Behavior beyond the schemas:
   `memory_changes` return them as such; `memory_write` and
   `memory_propose` store them without reading them; `memory_search` and
   `context_brief` leave them out and say so.
+- **`device_register`, `device_remove`, `key_list`, `key_wrap` and
+  `key_rotate`** (§9.1.11) move public keys and wrapped copies between
+  devices. The server never receives a key, and checks the access list
+  (§7.3), not the keys.
 
 ### 6.3 Errors
 
@@ -1248,7 +1257,7 @@ touched: `profile.core`, `profile.team`, `profile.<ns>` (named like its scope,
 so `profile.health` for `pcp.health`), `memory`,
 `memory.sensitive`, `review`, `partition`, `audit`, `export`, `erasure`, `grant`,
 `principal` (principals added, removed or changed, §9.2.4), `key` (key
-setup, wrapped copies, rotation and locking, §9.1.7), `conn.<id>` and
+setup, devices, wrapped copies, rotation and locking, §9.1.7, §9.1.11), `conn.<id>` and
 `ext.<part>`. An entry MUST NOT contain page bodies, titles,
 paths, search queries, profile values, or unkeyed hashes of any of them.
 `object_ids` holds opaque ids, never paths. Partition names are recorded;
@@ -2050,8 +2059,10 @@ rotates the context keys.
    finishes. This is a MUST under `device` custody (a removed device may
    keep the old key) and a SHOULD under `user` custody. Under `user`
    custody re-encryption needs plaintext, so it runs in authorized requests
-   (U2). Grants whose wrapped copies cannot be re-wrapped without their
-   grant keys are re-established, and the server tells the controller which.
+   (U2). Under `device` custody a device that holds the key runs it
+   (§9.1.11 item 7). Grants whose wrapped copies cannot be re-wrapped
+   without their grant keys are re-established, and the server tells the
+   controller which.
 3. **Loss.** If every secret that can unwrap a context key is lost, the
    content cannot be recovered, and under `user` and `device` custody the
    host MUST NOT be able to recover it: that is what the declaration means.
@@ -2229,11 +2240,100 @@ sealed page instead.
    unnoticed. It can still withhold a page, refuse a write, or serve an
    older version of a page; a reader has no standard way to detect an
    older version yet.
-10. **Keys.** How a device resolves a `key_id` is not defined here: which
-    principals' device public keys a key is wrapped for, and how a device
-    adds a wrapped copy for another member's device (§11). Until it is,
-    two implementations can share a sealed partition only by an
-    arrangement of their own.
+10. **Keys.** A device finds which key a `key_id` names, and gets its
+    own wrapped copy, as §9.1.11 says.
+
+#### 9.1.11 Key distribution
+
+Under `device` custody the server holds no key, so devices hand keys to
+each other through it. This section says how, for the keys that sealed
+pages name (§9.1.10): partition keys of a sealed partition under `device`
+custody, and context keys of a context under `device` custody. The server
+is a mailbox for public keys and wrapped copies. It checks the access list
+(§7.3), never a key. Devices check each other.
+
+1. **Devices.** A device that reads or writes sealed pages has two P-256
+   key pairs: one to receive wrapped copies (`use: "enc"`) and one to sign
+   (`use: "sig"`). Its public keys are a JWK set (RFC 7517). Its
+   `device_id` is the JWK thumbprint (RFC 7638, SHA-256) of its signing
+   key, so a person can compare it. The private keys never leave the
+   device. A device record is `principal`, `device_id`, `keys`, and
+   `vouch` when another device of the same principal vouches for it.
+2. **Registering a device.** `device_register` adds a device for the
+   calling principal. The server checks that `device_id` matches the
+   signing key, and checks `vouch` when present, and stores the record.
+   `device_remove` removes a device of the caller, or, for the controller,
+   any device. Removing a device deletes every wrapped copy for it, and
+   the server marks each key that device held `rotation_due` (item 7).
+3. **Vouching.** A `vouch` is a JWS compact serialization (RFC 7515,
+   `ES256`) by the signing key of another device of the same principal,
+   with `kid` equal to that device's `device_id`, over the payload
+   `{"principal", "device_id", "keys", "iat"}` of the new device. This is
+   how a principal adds their own new device: a device they already use
+   signs for it, for example after scanning a code the new device shows.
+4. **Verifying.** A device MUST NOT wrap a key for a device it has not
+   verified, and MUST NOT use a key from a wrapped copy that a device it
+   has not verified signed. A device is verified when:
+   - a person confirmed its `device_id` with the device's owner through a
+     channel the host does not run, such as a code scanned in person or
+     read out on a call; or
+   - its `vouch` verifies against a device of the same principal that is
+     already verified.
+
+   A device record from the server is a claim until then: a host could
+   list a device of its own. An implementation MUST NOT let the person
+   accept a device without one of these, not even with a warning. Implementations SHOULD show a `device_id` in a
+   form people can compare, such as a QR code or groups of digits, and
+   SHOULD tell the person when a principal's devices change.
+5. **Listing keys.** `key_list` takes a `partition`, or none for the
+   context keys, and returns each key that sealed pages there may name:
+   its `key_id`, its `state` (`current`, `rotation_due` or `retiring`),
+   the number of sealed pages under it, and its `recipients`. The
+   recipients are the device records of every principal that has `read`
+   on the partition (or, for a context key, of every principal of the
+   context), each with `wrapped` (whether a copy exists for that device)
+   and `wrapped_by` (the `device_id` that signed it). The wrapped copy
+   itself is returned only for the caller's own devices. `key_list` never
+   returns a key, and nothing about principals or devices without `read`
+   on the partition. A caller needs `read` on the partition.
+6. **Wrapping a copy.** A wrapped copy is a JWS compact serialization
+   (`ES256`, `kid` equal to the signing device's `device_id`) whose payload
+   is a JWE compact serialization (RFC 7516) with `alg` `ECDH-ES+A256KW`,
+   `enc` `A256GCM` and `kid` equal to the recipient's `device_id`. The JWE
+   plaintext is the UTF-8 JSON object `{"key_id", "partition", "k"}`, with
+   `k` the 32-byte key in base64url and `partition` absent for a context
+   key. A device that receives a copy MUST check the signature, that the
+   signer is verified (item 4), and that `key_id` and `partition` match
+   where it found the copy. `key_wrap` stores copies. The server checks,
+   without reading them, that the signer is a device of the caller that
+   already holds a copy of that key, that the recipient is a device of a
+   principal with `read` on the partition (for a context key, of a
+   principal of the context), and that the key is `current`
+   or `retiring`. It rejects the rest with `forbidden` or `invalid_input`.
+7. **Rotating.** `key_rotate` makes a new key current for a partition, or
+   for the context: it takes the new `key_id` and wrapped copies for one
+   or more recipients, at least one of them for the caller's own device.
+   The caller needs `write` on the partition and, unless the partition has
+   no key yet, a copy of the current key. A `key_id` is chosen by the
+   device and is unique within the context; 16 random bytes in base64url
+   are RECOMMENDED. The old key becomes `retiring`: it still opens pages,
+   and `memory_write` rejects new pages under it (§9.1.10 item 5). Devices
+   that hold both keys rewrite the old pages under the new one. When no
+   sealed page names a retiring key, the server deletes its wrapped copies
+   and stops listing it. Where §9.1.7 item 2 or §9.1.9 item 3 says the
+   server rotates a key, under `device` custody the server marks it
+   `rotation_due`, refuses new wrapped copies of it and new pages under it
+   with `conflict`, and a device that holds the key rotates it when it
+   next connects. The server has by then deleted every copy wrapped for
+   the removed principal or device.
+8. **Audit.** Registering and removing devices, adding wrapped copies and
+   rotating are audited with the `key` category (§7.5). `object_ids` holds
+   `device_id` and `key_id` values only.
+9. **What this does not cover** (informative). The server still decides who
+   is on the access list, so it can add a principal. Item 4 is what keeps
+   such a principal's devices from receiving a key: no person has
+   verified them. A device that keeps an old key can still read the pages
+   it could read before it was removed, which is why item 7 rotates.
 
 ### 9.2 Work, personal and organization control
 
@@ -2600,8 +2700,6 @@ archives the server has restored, and that has restored the server's.
   (§5.2) is enough, or a server needs a normative merge and supersession rule.
 - **Pages in several partitions:** some team servers file one item under
   several scopes, and a page has one partition today.
-- **Sealed pages:** how a device lists the recipients of a key and wraps
-  a key for another member's device (§9.1.10 item 10).
 - **Encryption:** searchable encryption, and a custody value for runtimes in
   attested enclaves that the operator cannot read (§9.1.4).
 - **Tokens:** sender-constrained tokens (DPoP), and per-partition grants
