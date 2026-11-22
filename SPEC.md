@@ -302,6 +302,15 @@ data derived from content **are content**: the declaration covers them, and
 a server whose derived data a wider set of parties can read MUST declare that
 wider set.
 
+**Per partition.** In a context with the `partitions` feature, a partition
+MAY have its own `encryption`, with the same fields and consistency rules
+(§9.1.9). A partition without one has the context's declaration. A
+partition's declaration MUST NOT name fewer parties than really can read
+its content and the data derived from it. The context's `encryption` states
+the widest case across its partitions, so it stays true for a client that
+ignores partitions. Discovery documents name no partitions (§2.3); a
+partition's declaration is returned by `partition_list` (§6.2).
+
 ### 2.5 Discovery and authorization metadata
 
 A context is described twice: by its PCP context document (this section)
@@ -863,6 +872,9 @@ list. Every page is in exactly one partition. Names match
    read, including through counts, errors or search ranking.
 6. `partition_list` (§6.2) returns the partitions the caller can access and
    its effective rights in each.
+7. A partition MAY have its own key custody (§2.4, §9.1.9), for example a
+   person's private partition sealed in a team context whose other
+   partitions the host can read.
 
 ### 5.4 Review state
 
@@ -1029,6 +1041,9 @@ Behavior beyond the schemas:
   MUST NOT fail because the token lacks one of the scopes; it returns the
   parts the token covers and names the rest in `omitted`. In a team context
   it MAY include the caller's partitions.
+- **`partition_list`** returns, for each partition, its own `encryption`
+  (§2.4) when it has one, so a client can tell a sealed partition (§9.1.9)
+  from the rest. Partitions that `context_brief` includes carry it too.
 - **`audit_list`** returns audit entries (§7.5) the caller may see: by
   default the controller sees all entries and other principals see their
   own.
@@ -1337,7 +1352,8 @@ connections/<id>.json         connection configuration (§8.5)
 5. **Context descriptor.** `context.json` conforms to
    [`schemas/0.3/export.context.schema.json`](schemas/0.3/export.context.schema.json).
    It lists every principal, including removed principals that any file in
-   the archive names, and every partition with its access list (§7.3). In a
+   the archive names, and every partition with its access list (§7.3) and
+   its own `encryption`, if it has one (§9.1.9). In a
    context without the `partitions` feature it lists `default` with an empty
    access list. Roles are informative.
 6. **Audit.** `audit/log.jsonl` holds one audit entry (§7.5) per line. A
@@ -1413,7 +1429,9 @@ Archives use the §2.4 vocabulary in two declarations.
    show it to the controller, and MUST warn before importing into a context
    whose `readable_by` includes a party the source's did not (for example
    from `user` custody into `host` custody), or whose controller differs
-   (§9.2.3 item 5).
+   (§9.2.3 item 5). A partition's own declaration in `context.json` is what
+   that partition's pages were promised, and the warning applies to each
+   target partition against it.
 2. **Archive level.** The whole archive is encrypted as one envelope, for
    example `<name>.pcp.zip.age`. This hides paths and the manifest. The
    envelope MUST use a self-describing format (age, OpenPGP or JWE, for
@@ -1439,7 +1457,9 @@ Archives use the §2.4 vocabulary in two declarations.
    Ciphertext that the controller cannot decrypt with keys it holds is not
    an export: it goes in `omitted` with reason `encrypted_key_unavailable`.
    An exporter SHOULD offer file-level encryption for special-category
-   namespaces (§4.6 rule 4) in an otherwise plaintext archive.
+   namespaces (§4.6 rule 4) in an otherwise plaintext archive. These
+   defaults apply per partition: the pages of a sealed partition (§9.1.9)
+   follow its custody, even in an archive whose other files are plaintext.
 6. **Importers** verify hashes before decrypting. A file that fails to
    decrypt fails the archive in restore mode and is `invalid` in import
    mode.
@@ -2051,6 +2071,57 @@ rotates the context keys.
 A receipt's propagation entry says how each store was cleared: `deleted`
 or `shredded` (§8.9.3).
 
+#### 9.1.9 Custody per partition
+
+A context with the `partitions` feature MAY hold partitions under different
+custody. A **sealed partition** is one whose own `encryption` (§2.4)
+declares `user` or `device` custody while the context's is wider: a
+partition under `user` custody in a `host` context, or under `device`
+custody in a `host` or `user` context.
+
+1. **The declaration.** A partition's `encryption` follows §2.4 and this
+   section with "partition" for "context": `principals` means the
+   principals that have `read` on the partition (§7.3), and the partition's
+   content is its pages, their revisions and history, and everything
+   derived from them (§9.1.1). A partition's declaration MUST NOT name
+   fewer parties than really can read that content. A partition without
+   its own declaration has the context's.
+2. **The widest case.** The context's `encryption` covers every partition:
+   its `key_custody` is the widest any partition declares (`host`, then
+   `user`, then `device`), its `readable_by` lists every party that any
+   partition lists, and `e2e` is `true` only if every partition declares
+   `e2e: true`. A server MUST keep the context's declaration true whenever
+   it adds a partition or changes one's custody.
+3. **§9.1 per partition.** A sealed partition under `user` custody meets
+   U1 to U6 (§9.1.3), and one under `device` custody meets V1 to V5
+   (§9.1.4), for its own content, with "partition key" for "context key":
+   - its content is encrypted under partition keys of its own, never under
+     a key that the wider custody lets the host use;
+   - no index, embedding, cache, queue or worker of another partition holds
+     its content (U4), and a search across partitions decrypts or ranks the
+     sealed partition's part only as its custody allows;
+   - U6 and V1 apply to the access list too: removing a principal's `read`
+     on the partition, or the principal, deletes every copy of the
+     partition key wrapped for them, and the partition key is rotated as
+     §9.1.7 item 2 says for a context key;
+   - its archives, exports and erasures follow §9.1.8 under its own
+     custody, and its locked state follows §9.1.5.
+4. **Metadata stays metadata.** §9.1.1 is unchanged. Partition names,
+   access lists, page ids and the other metadata it lists MAY stay readable
+   under the context's custody, so access control, retention and audit
+   keep working. Page paths and titles are content, so a sealed partition's
+   paths are sealed with it.
+5. **Moving pages.** Moving a page into a sealed partition (§5.3 item 4)
+   encrypts it under the partition's keys and deletes the readable copies
+   the wider partition held, including derived data; backups age out as
+   §9.1.8 says for erasure. Moving a page out of a sealed partition makes
+   it readable by the parties of the target partition. Both are audited
+   like any write.
+6. **Reaching a sealed partition.** A host component that cannot decrypt a
+   partition treats its pages as locked (§9.1.5 item 2) and reveals no
+   content. How a client reaches the pages of a partition under `device`
+   custody through the context's MCP endpoint is an open question (§11).
+
 ### 9.2 Work, personal and organization control
 
 Work and personal context are separate contexts (§1.2). This
@@ -2416,6 +2487,9 @@ archives the server has restored, and that has restored the server's.
   (§5.2) is enough, or a server needs a normative merge and supersession rule.
 - **Pages in several partitions:** some team servers file one item under
   several scopes, and a page has one partition today.
+- **Sealed partitions over MCP:** how a client reads and writes the pages
+  of a partition under `device` custody (§9.1.9) in a context whose MCP
+  endpoint the host serves.
 - **Encryption:** searchable encryption, and a custody value for runtimes in
   attested enclaves that the operator cannot read (§9.1.4).
 - **Tokens:** sender-constrained tokens (DPoP), and per-partition grants
