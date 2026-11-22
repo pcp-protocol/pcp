@@ -173,7 +173,7 @@ Rules:
 
 ### 1.4 Optional features and the team of one
 
-A context MAY use three optional features, declared in discovery `features`
+A context MAY use four optional features, declared in discovery `features`
 (§2.3):
 
 | Feature | What it adds | Section |
@@ -181,13 +181,14 @@ A context MAY use three optional features, declared in discovery `features`
 | `partitions` | More than one partition, with a per-principal access list | §5.3, §7.3 |
 | `review` | Writes that become proposals until a reviewer approves them | §5.4 |
 | `delegation` | Agents that act for a human, reading with the intersection of both | §7.4 |
+| `changes` | A change feed, `memory_changes`, for clients that keep their own copy of the pages | §5.8 |
 
 **A personal context is a team of one.** It has one human principal, who is
 the controller; one partition, `default`; and no review queue. Every rule in
 this specification has a defined meaning for that case: absent `partition`
 means `default`, absent `review` means approved, and every principal has
 `read`, `propose` and `write` on `default` within its token's scopes (§7.3). A server that serves only
-personal contexts implements none of the optional features and is still
+personal contexts needs none of the optional features and is still
 conforming.
 
 ## 2. Discovery
@@ -269,7 +270,7 @@ Clients MUST ignore fields they do not understand.
 | `profile_extensions` | OPTIONAL | absent | Extension namespaces present (§4.5), so clients can request the right scopes |
 | `connections` | OPTIONAL | absent | Connection ids present (§6.4) |
 | `extensions` | OPTIONAL | absent | Tool extensions implemented, by reverse-DNS id (§6.5) |
-| `features` | OPTIONAL | absent | Optional features in use: `partitions`, `review`, `delegation` (§1.4) |
+| `features` | OPTIONAL | absent | Optional features in use: `partitions`, `review`, `delegation`, `changes` (§1.4) |
 | `conformance` | OPTIONAL | absent | Conformance profiles claimed: `personal`, `team` (§10) |
 | `export` | OPTIONAL | absent | `true` claims the four commitments of §8.1: full export, a checkable archive, restore and import of the server's own archives, and no host-held archive keys. A server MUST NOT emit `true` otherwise |
 
@@ -954,6 +955,55 @@ as `sensitive` and write `sensitivity: sensitive` into the stored
 frontmatter, so the default travels with the page (§8.2 item 2). A write
 that sets `sensitivity: normal` explicitly is honored.
 
+### 5.8 Change feed
+
+A client that keeps its own copy of a context, for example a device that
+searches pages locally, needs what changed since its last sync, including
+pages that went away. A server that declares the `changes` feature (§1.4)
+offers `memory_changes` (§6.2) for this.
+
+1. **Cursors.** A cursor is opaque. A call without a cursor starts from
+   the start. Every result carries `next_cursor`, which marks the position
+   after the last change returned, and `has_more`, which says whether more
+   changes are already waiting. A client stores `next_cursor` and passes it
+   on its next call. A cursor MUST NOT carry content (§9.1.1). It is valid
+   for the context and the grant it was issued under; a server MAY reject
+   a cursor from another context or grant with `invalid_input`.
+2. **Changes.** Each change is either a page or a removal, with
+   `changed_at`, the instant of the change. A page appears with the same
+   summary `memory_list` returns, and the client reads it with
+   `memory_read`. A page that changed several times since the cursor MAY
+   appear once, at its latest change. Changes are listed in the order the
+   server committed them, and following `next_cursor` MUST NOT skip one.
+3. **What is listed.** The feed applies §5.5 items 1 and 3 like the other
+   retrieval tools: a caller sees changes only to pages it can read, with
+   the token it holds now. It lists `stale` and `archived` pages with their
+   `lifecycle`, so a copy can hold them. It does not list proposed or
+   rejected revisions; a page appears when a change to it is approved.
+4. **Removals.** A removal carries the page's `id`, the last `partition`
+   the caller could read it in, `changed_at`, and a `reason`: `deleted`
+   (§8.10 item 3), `erased` (§8.9) or `expired` (§8.10 item 1). It never
+   carries the path, the title or anything else of the page: those are
+   content. A page that the caller could read and can no longer read,
+   because it moved to another partition, became sensitive, or the
+   caller's access or grant narrowed, also appears as a removal, with
+   reason `deleted`, so the feed does not show that it still exists
+   (§5.3 item 5). A server MUST NOT list a removal for a page the caller
+   could not read at some point after the position its cursor marks. A
+   call without a cursor MAY leave removals out.
+5. **Removals are metadata.** A removal holds only metadata (§9.1.1).
+   Keeping it does not keep the page, and erasure does not need to delete
+   it.
+6. **Retention.** A server keeps removals for a documented window,
+   RECOMMENDED 30 days. A cursor older than the window, or one the server
+   can no longer honor (for example after a restore, §8.7.2), gets
+   `cursor_expired` (§6.3). The client then calls without a cursor, and
+   drops from its copy every page that the new sync does not list.
+7. **Scope of the feed.** The feed covers pages only. Profile documents,
+   extension data and audit entries are not in it.
+
+An incremental export, when one is defined, uses the same cursor.
+
 ## 6. Tool surface
 
 ### 6.1 Naming
@@ -1000,6 +1050,7 @@ schema. `openWorldHint` is `false` for every standard tool.
 | `memory_search` | Search memory | `memory:read` | yes | no | yes | Always |
 | `memory_read` | Read memory page | `memory:read` | yes | no | yes | Always |
 | `memory_list` | List memory pages | `memory:read` | yes | no | yes | Always |
+| `memory_changes` | List memory changes | `memory:read` | yes | no | yes | The `changes` feature is used |
 | `memory_write` | Write memory page | `memory:write` (or `memory:propose`, §5.4) | no | yes (overwrites) | no (may create a revision per call) | Always |
 | `memory_propose` | Propose memory change | `memory:propose` | no | no | no | The `review` feature is used |
 | `review_list` | List pending reviews | `memory:read` | yes | no | yes | The `review` feature is used |
@@ -1021,6 +1072,10 @@ Behavior beyond the schemas:
   may see.
 - **`memory_list`** lists page summaries, filtered by path prefix,
   partition, `type`, lifecycle and review state. It replaces "read `_index`".
+- **`memory_changes`** lists what changed since a cursor: pages that
+  changed, and removals for pages the caller can no longer read (§5.8). It
+  accepts `cursor` and `limit`, and returns `changes`, `next_cursor` and
+  `has_more`.
 - **`memory_write`** creates or replaces a page (§5.2.2, §5.4). With
   `expected_updated` it fails with `conflict` unless the stored `updated`
   matches.
@@ -1058,6 +1113,7 @@ arguments that are not an object.
 | `not_found` | The object does not exist, **or the caller may not know it exists** |
 | `forbidden` | The caller may see the object but lacks the right (with `required_scopes` when a scope is missing) |
 | `conflict` | `expected_updated` does not match, a case-only path collision (§5.1), or the path is taken by a page the caller cannot read (§5.2.2) |
+| `cursor_expired` | A `memory_changes` cursor is older than the server keeps removals for, or no longer valid (§5.8 item 6). The client syncs again from the start |
 | `too_large` | Input or result exceeds a server limit |
 | `rate_limited` | Too many calls |
 | `locked` | The context's keys are not available for this request right now (§9.1.5) |
