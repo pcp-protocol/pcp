@@ -69,8 +69,8 @@ the controller can see what a grant did and revoke it.
 
 | Method and path | Behavior |
 |---|---|
-| `GET /grants` | Active grants: `{ id, client: { id, name, uri? }, principal, device?, scopes, created, last_used, expires? }`. `device` is a label the controller or the client gave, for recognizing the grant; it has no protocol meaning. |
-| `PATCH /grants/{id}` | Rename the `device` label. |
+| `GET /grants` | Active grants: `{ id, client: { id, name, uri? }, principal, device?, scopes, partitions?, created, last_used, expires? }`. `partitions` is present only for a grant limited to some partitions (SPEC §3.4 item 10). `device` is a label the controller or the client gave, for recognizing the grant; it has no protocol meaning. |
+| `PATCH /grants/{id}` | Body: `{ "device"?, "scopes"?, "partitions"? }`. `device` renames the label. `scopes` and `partitions` narrow the grant without a new consent (SPEC §3.4 item 10): each is the complete new set and must be a subset of what the grant holds, so `{ "scopes": [...] }` without `conn.mail:read` and `conn.mail:write` takes one connection away from one client. A value that adds anything, or leaves no scope, fails with 400 `invalid_input` and `violations`, and nothing changes. Returns the grant as it now stands, including any qualifier scopes removed with their base. Takes effect for every token of the grant within 5 minutes. Audited as `grant.narrow`. A write scope narrows to read only when the grant also holds the read scope: `:write` does not imply `:read` (SPEC §7.1). |
 | `DELETE /grants/{id}` | Revoke the grant: every access and refresh token of the family stops working (at the MCP endpoint within 5 minutes at most, SPEC §3.4 item 5), no refresh can produce a new one, and under `user` custody the grant's wrapped key is deleted (SPEC §9.1.3 U6). |
 | `GET /audit` | The access log (SPEC §7.5), newest first, filterable by `category`, `principal`, `grant`, `since`, `until`. |
 
