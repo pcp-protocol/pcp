@@ -65,7 +65,8 @@ code. No normative changes.
   file a claim can link to, clearer notes for the interactive mode, and a CI
   recipe an implementation can copy.
 - **Errata.** Wording that real implementations found unclear, fixed as
-  editorial changes.
+  editorial changes. The [errata page](docs/errata.md) lists what has been
+  reported so far.
 - **Guides:** building a small Personal server from the reference server,
   and connecting a client.
 - **Schemas in a public schema registry**, in addition to this repository's

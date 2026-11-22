@@ -301,7 +301,8 @@ suite can check a claim, and a claim it fails is a violation (SPEC §10.3).
 - Run the suite on every change: see the suite's
   [README](../conformance/README.md).
 - If something in the specification or the suite was unclear while you built
-  this, say so on the errata issue of this repository. A failed run that
+  this, say so on the errata issue of this repository (the
+  [errata page](errata.md) lists what is already known). A failed run that
   shows a gap is as useful as a pass.
 - Read SPEC §5 (memory), §6 (tools), §3 (authorization) and §8 (export), in
   that order, once the trimmed server runs.
