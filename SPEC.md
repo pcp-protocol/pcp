@@ -1935,7 +1935,11 @@ A server declares `device` only if:
   In this subsection, a **principal's device** is a machine the principal
   controls: the principal holds its administrative credentials, and the
   host can neither sign in to it nor change its software. A phone, a laptop
-  or a home server qualifies. A machine the principal rents qualifies too,
+  or a home server qualifies. Software updates that the principal accepts,
+  or can turn off, do not count as the host changing its software; a
+  channel through which the host can push code to the machine without the
+  principal's consent does. The server's documentation says how the device
+  runtime is updated. A machine the principal rents qualifies too,
   if the host is not its provider; the server's documentation then names the
   provider, as it names a subprocessor (§9.1.2 item 1). A node the host
   operates is not a principal's device, whatever it runs, and neither is a
