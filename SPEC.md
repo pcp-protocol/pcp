@@ -945,6 +945,10 @@ request. Whatever the method, `memory_search`, `memory_list` and
    NOT keep a persistent derived structure that a party outside
    `readable_by` can read. Indexes are rebuildable and are not part of
    export.
+6. **Leave sealed pages out of ranking.** A sealed page (§9.1.10) is
+   filtered by its metadata like any page, and is never ranked, excerpted
+   or summarized. `memory_search` and `context_brief` say what they left
+   out (§9.1.10 item 6).
 
 Returned memory is data, not instructions; §9.6 frames returned content.
 
@@ -1053,6 +1057,10 @@ Behavior beyond the schemas:
   download URL, also as a `resource_link` content block.
 - **`erase_request`** erases by subject or by page (§8.9.4). It defaults
   to a dry run.
+- **Sealed pages** (§9.1.10): `memory_read` by `id`, `memory_list` and
+  `memory_changes` return them as such; `memory_write` and
+  `memory_propose` store them without reading them; `memory_search` and
+  `context_brief` leave them out and say so.
 
 ### 6.3 Errors
 
@@ -2119,8 +2127,109 @@ custody in a `host` or `user` context.
    like any write.
 6. **Reaching a sealed partition.** A host component that cannot decrypt a
    partition treats its pages as locked (§9.1.5 item 2) and reveals no
-   content. How a client reaches the pages of a partition under `device`
-   custody through the context's MCP endpoint is an open question (§11).
+   content. A client reaches the pages of a partition under `device`
+   custody through the context's MCP endpoint as sealed pages (§9.1.10).
+
+#### 9.1.10 Sealed pages
+
+A **sealed page** is how a server serves, over MCP, a page that it holds
+only as ciphertext: the content is one ciphertext, and the metadata of
+§9.1.1 stays readable. A server serves as sealed pages the pages that no
+component it runs can decrypt: the pages of a sealed partition under
+`device` custody (§9.1.9), and the pages that a host component stores or
+syncs for a context under `device` custody (§9.1.4 V3 and V4). A device
+that holds the key reads and writes them through the server's MCP
+endpoint, as a client. A client can tell which partitions hold sealed
+pages from the `encryption` that `partition_list` returns (§6.2).
+
+1. **Shape.** A sealed page has, as its frontmatter, the readable metadata
+   of §9.1.1 that applies to a page: `id`, `partition`, `updated`,
+   `recorded_at`, `expires`, `valid_from`, `valid_until`, `type`,
+   `lifecycle`, `importance`, `sensitivity`, `review`, and `source` with
+   `origin`, `principal`, `on_behalf_of` and `client` only. It has one
+   `sealed` object with:
+   - `scheme`: the format of the ciphertext (item 2);
+   - `key_id`: names the partition key, or the context key, that the
+     ciphertext is encrypted under. It never contains a key;
+   - `ciphertext`: a string in the scheme's serialization, base64url for a
+     binary format.
+
+   Everything else is content and is only inside the ciphertext: the path,
+   the title, the body, `tags` and every other frontmatter value. The
+   plaintext is a UTF-8 JSON object with `path`, `partition`, `frontmatter`
+   (the keys that are not readable) and `body`. A reader MUST check that
+   `partition` in the plaintext equals the readable one, and MUST treat a
+   page that fails to decrypt, or fails that check, as unreadable, never as
+   empty.
+2. **Schemes.** Every implementation that reads or writes sealed pages
+   MUST support the baseline scheme `jwe`: JWE compact serialization
+   (RFC 7516) with `alg` `dir` and `enc` `A256GCM`, whose content
+   encryption key is the key that `key_id` names, with `kid` equal to
+   `key_id` and `cty` `pcp-page+json`. That key is wrapped separately for
+   each recipient, never inside a page. Other formats MAY be used if they
+   are self-describing (as §8.4 item 2 says for archives) and the
+   partition declares them: its `encryption` lists the schemes it accepts
+   in `sealed_schemes`, which always includes `jwe` (absent means
+   `["jwe"]`). A server MUST reject a sealed page whose `scheme` the
+   partition does not list, with `invalid_input`. It checks this without
+   reading the page.
+3. **Addressed by `id`.** Paths are content, so the server does not know a
+   sealed page's path. `memory_read` finds a sealed page by `id` only, and
+   path filters (`memory_read` by `path`, `memory_list` by prefix) do not
+   see it. The rules of §5.1 then hold for clients: a client checks a path
+   before it seals it, and keeps paths unique among the pages it can
+   read. A reader that finds two sealed pages with one path keeps both and
+   tells the person.
+4. **Reading.** `memory_read` and `memory_list` return sealed pages as
+   such. `memory_read` returns the readable frontmatter and `sealed`, and
+   no `path` or `body`. In `memory_list`, a sealed page's summary has its
+   `id`, its readable keys and `sealed` without `ciphertext`, and no
+   `path` or `title`. Partition access, sensitivity, review, lifecycle and
+   `expires` (§5.3, §5.4, §5.5, §8.10) apply as to any page: they need
+   only metadata.
+5. **Writing.** `memory_write` accepts a sealed page in place of a path, a
+   body and content keys: an `id` to replace a page, or none to create one,
+   the readable keys a client may set (§5.2.3), and `sealed`. The server
+   stores the ciphertext as it is and does not read it, as §9.1.4 V3 says
+   for host-side writers. It validates the metadata only: the readable
+   keys against §5.2, the caller's rights on the partition,
+   `expected_updated`, the size, the scheme (item 2), and that `key_id`
+   names a current key of the partition. It stamps the server-set keys
+   (§5.2.3) and audits the write like any write. A server MUST reject with
+   `invalid_input` a write that carries `sealed` together with a path, a
+   body or a content key, and a plain write into a partition under
+   `device` custody, so plaintext never reaches it by mistake. A sealed
+   page moves to another partition (§5.3 item 4) only by a write that
+   carries a new ciphertext under that partition's key. `memory_propose`
+   (§5.4) takes a sealed page the same way.
+6. **Search and brief.** A server can match only metadata, so
+   `memory_search` leaves sealed pages out of ranking and results, and
+   returns `sealed_omitted`: the number of sealed pages that its other
+   filters would have let through. `context_brief` leaves them out and
+   names, in `omitted`, each partition whose sealed pages it left out, as
+   `sealed:<partition>`, as it does for a locked part (§9.1.5 item 2). A
+   device that holds the key searches its own copy.
+7. **Change feed.** The change feed (§5.8) serves sealed pages unchanged,
+   with the summary of item 4.
+8. **Where a sealed page can be read.** A partition's `encryption` (§2.4,
+   §9.1.9) MAY carry `read_at`: the URL of a PCP context document (§2)
+   whose runtime holds the partition's key and serves its pages to the
+   clients it authorizes, so that a client that meets sealed pages can tell
+   the person where to read them. It is never on a page. A server returns
+   it only to callers that can access the partition (§5.3 item 5), and
+   sets it only at the request of the principal whose runtime it names,
+   since it tells the partition's other principals which service that
+   principal uses. A client MAY show it to the person, and MUST NOT
+   connect to it, or send a token there, without the person's action.
+9. **What the host can still do** (informative). The scheme authenticates
+   the ciphertext, so the host cannot read or change a sealed page
+   unnoticed. It can still withhold a page, refuse a write, or serve an
+   older version of a page.
+10. **Keys.** How a device resolves a `key_id` is not defined here: which
+    principals' device public keys a key is wrapped for, and how a device
+    adds a wrapped copy for another member's device (§11). Until it is,
+    two implementations can share a sealed partition only by an
+    arrangement of their own.
 
 ### 9.2 Work, personal and organization control
 
@@ -2487,9 +2596,8 @@ archives the server has restored, and that has restored the server's.
   (§5.2) is enough, or a server needs a normative merge and supersession rule.
 - **Pages in several partitions:** some team servers file one item under
   several scopes, and a page has one partition today.
-- **Sealed partitions over MCP:** how a client reads and writes the pages
-  of a partition under `device` custody (§9.1.9) in a context whose MCP
-  endpoint the host serves.
+- **Sealed pages:** how a device lists the recipients of a key and wraps
+  a key for another member's device (§9.1.10 item 10).
 - **Encryption:** searchable encryption, and a custody value for runtimes in
   attested enclaves that the operator cannot read (§9.1.4).
 - **Tokens:** sender-constrained tokens (DPoP), and per-partition grants
