@@ -969,14 +969,14 @@ request. Whatever the method, `memory_search`, `memory_list` and
 1. **Filter before ranking.** Apply the partition access list, sensitivity
    and review visibility before ranking, counting or building snippets, so
    nothing the caller cannot read influences what it sees.
-2. **Honor lifecycle, validity and supersession.** Superseded pages are
-   left out as §5.2.5 item 2 says. `memory_search` and `context_brief`
+2. **Honor lifecycle and validity.** `memory_search` and `context_brief`
    return `active` and `validated` pages and current or undated pages first,
    and return `stale` or expired-validity pages only when asked
    (`include_stale`) or when nothing else matches, and then with their dates.
    `memory_list` lists stale pages with their `lifecycle` unless
    `include_stale` is `false`. All three exclude `archived` pages unless asked
-   (`include_archived`), and never return pages past `expires`.
+   (`include_archived`), and never return pages past `expires`. Superseded
+   pages are left out as §5.2.5 item 2 says.
 3. **Honor review.** As §5.4 item 4.
 4. **Support `as_of`.** `memory_search` accepts `as_of`, an instant, and then
    answers as the context stood at that instant: only pages with
