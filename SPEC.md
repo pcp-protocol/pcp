@@ -2281,7 +2281,8 @@ is a mailbox for public keys and wrapped copies. It checks the access list
      already verified.
 
    A device record from the server is a claim until then: a host could
-   list a device of its own. Implementations SHOULD show a `device_id` in a
+   list a device of its own. An implementation MUST NOT let the person
+   accept a device without one of these, not even with a warning. Implementations SHOULD show a `device_id` in a
    form people can compare, such as a QR code or groups of digits, and
    SHOULD tell the person when a principal's devices change.
 5. **Listing keys.** `key_list` takes a `partition`, or none for the
