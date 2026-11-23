@@ -56,7 +56,7 @@ Until this is settled: run the suite on a machine where nothing else listens
 on the server's port, and say so in the report if SEC-05 was checked another
 way.
 
-State: Fix proposed in PRNUM. The failure message now says that another program may be answering, and the suite README says to give the server a port nothing else uses.
+State: Fix proposed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The failure message now says that another program may be answering, and the suite README says to give the server a port nothing else uses.
 
 ### E-02
 
@@ -65,7 +65,7 @@ and reports DISC-12 and DISC-14, because one check cites all three. The
 suite README says `--only` runs "the checks that cite these ids", which is
 accurate, but a reader can expect only the named ids in the report.
 
-State: Fix proposed in PRNUM, which adds that sentence to the options table of the suite README.
+State: Fix proposed in [#103](https://github.com/pcp-protocol/pcp/pull/103), which adds that sentence to the options table of the suite README.
 
 ### E-03
 
@@ -90,7 +90,7 @@ each message.
 Until this is settled: a published claim should say, for every skipped id,
 which kind of skip it was.
 
-State: Fix proposed in PRNUM. The report marks each skip as not applicable or not run, and SPEC §10.3 item 1 says that only the second kind needs anything further.
+State: Fix proposed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The report marks each skip as not applicable or not run, and SPEC §10.3 item 1 says that only the second kind needs anything further.
 
 ### E-05
 
@@ -113,7 +113,7 @@ without it has no way to clean up through the protocol.
 Until this is settled: run write checks against a throwaway context, as SPEC
 §10.3 item 1 already asks for the `S+` checks.
 
-State: Fix proposed in PRNUM. The suite README now says to delete the throwaway context afterwards, and that `erase_request` also works where a server offers it.
+State: Fix proposed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The suite README now says to delete the throwaway context afterwards, and that `erase_request` also works where a server offers it.
 
 ### E-07
 
@@ -126,7 +126,7 @@ while it is `false`.
 Until this is settled: a clean report is not enough for a claim on its own.
 Check §10.3 item 4 by hand.
 
-State: Fix proposed in PRNUM. The report says in a note at the top that no claim is possible while `export` is not `true`.
+State: Fix proposed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The report says in a note at the top that no claim is possible while `export` is not `true`.
 
 ### E-08
 
