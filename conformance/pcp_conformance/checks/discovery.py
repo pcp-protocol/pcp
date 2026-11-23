@@ -36,8 +36,8 @@ def root_document(t, rec):
             rec.fail("DISC-07", f"the context lives under /{base_path}, so this is a multi-context host, "
                                 f"but the origin's /.well-known/pcp.json gave {got}")
         else:
-            rec.skip("DISC-07", "single-context server at the origin root")
-        rec.skip("DISC-08", "no root document")
+            rec.na("DISC-07", "single-context server at the origin root")
+        rec.na("DISC-08", "no root document")
         return
     errors = t.schema_errors("discovery.schema.json", doc)
     bad = [k for k in ("mcp_endpoint", "resource_metadata", "kind", "controller_type", "alternate_endpoints") if k in doc]
@@ -96,7 +96,7 @@ def protected_resource_metadata(t, rec):
 @check("AUTH-09")
 def origin_root_metadata(t, rec):
     if not t.multi_context:
-        rec.skip("AUTH-09", "not a multi-context host")
+        rec.na("AUTH-09", "not a multi-context host")
         return
     r = t.http.get(origin_of(t.endpoint) + "/.well-known/oauth-protected-resource", headers={"Accept": "application/json"})
     if r.status != 200 or not r.is_json():
@@ -118,14 +118,14 @@ def unauthenticated_challenge(t, rec):
     if is_loopback(t.endpoint):
         rec.expect("SEC-08", r.status == 401, f"loopback server answered an unauthenticated request with {r.status}")
     else:
-        rec.skip("SEC-08", "not a loopback server")
+        rec.na("SEC-08", "not a loopback server")
 
 
 @check("AUTH-44")
 def unknown_context_endpoint(t, rec):
     from ..mcp import McpClient
     if not t.multi_context:
-        rec.skip("AUTH-44", "not a multi-context host")
+        rec.na("AUTH-44", "not a multi-context host")
         return
     r, doc = t.root_doc
     base = doc["context_url_template"].replace("{context}", "pcp-conformance-no-such-context-" + t.run_id)
@@ -214,7 +214,7 @@ def tls(t, rec):
 def alternate_endpoints(t, rec):
     alts = (t.context_doc or {}).get("alternate_endpoints") or []
     if not alts:
-        rec.skip("DISC-13", "no alternate_endpoints")
+        rec.na("DISC-13", "no alternate_endpoints")
         return
     bad = []
     for alt in alts:

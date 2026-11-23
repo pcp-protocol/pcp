@@ -2377,7 +2377,9 @@ that context:
    throwaway context. A check the suite skips because the server needs a
    person to approve authorizations, or needs a capability the run did not
    have, counts as an `M` requirement: it passes in a run that has it (for
-   example with `--interactive`), or a person checks it;
+   example with `--interactive`), or a person checks it. A check skipped
+   because the context does not use the feature (for example partitions or
+   review) is a requirement that does not apply, and needs nothing further;
 2. every applicable `A` requirement passes on a full export of that context;
 3. the `M` and `R` requirements that apply have been checked; and
 4. discovery `export` is `true` (§8.1).

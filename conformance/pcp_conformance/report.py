@@ -20,20 +20,30 @@ def _rollup(statuses):
     return "manual"
 
 
-def build(reqs, findings, opts, doc, doc_url, profile, duration):
+def _skip_kind(fs):
+    """One id skipped for two reasons counts as not run: that is the one a claim must settle."""
+    kinds = {f.skip_kind for f in fs if f.status == "skip"}
+    return "not_run" if "not_run" in kinds else "not_applicable"
+
+
+def build(reqs, findings, opts, doc, doc_url, profile, duration, notices=()):
     by_id = {}
     for f in findings:
         by_id.setdefault(f.id, []).append(f)
     entries = []
     for rid, r in reqs.items():
         fs = by_id.get(rid, [])
-        entries.append({
+        entry = {
             "id": rid, "level": r.level, "section": r.section, "profile": r.profile,
             "check": r.check,
             "status": _rollup({f.status for f in fs}),
             "messages": [(f"{f.status}: {f.message}" if len(fs) > 1 else f.message) for f in fs if f.message],
-        })
+        }
+        if entry["status"] == "skip":
+            entry["skip_kind"] = _skip_kind(fs)
+        entries.append(entry)
     summary = {s: sum(1 for e in entries if e["status"] == s) for s in ORDER}
+    skipped = {k: sum(1 for e in entries if e.get("skip_kind") == k) for k in ("not_run", "not_applicable")}
     used = {k: v for k, v in vars(opts).items()
             if k not in SECRET_OPTIONS + ("endpoint", "timeout") and v not in (None, False)
             and not (k == "revocation_wait" and v == 300)}
@@ -52,6 +62,8 @@ def build(reqs, findings, opts, doc, doc_url, profile, duration):
         "options": used,
         "duration_s": duration,
         "requirement_summary": summary,
+        "skipped": skipped,
+        "notices": list(notices),
         "requirements": entries,
     }
 
@@ -71,10 +83,17 @@ def markdown(rep):
            "|---:|---:|---:|---:|---:|",
            f"| {s['pass']} | {s['fail']} | {s['warn']} | {s['skip']} | {s['manual']} |",
            ""]
-    titles = {"fail": "Failed (MUST)", "warn": "Warnings (SHOULD not met)",
-              "skip": "Skipped (not a pass; see SPEC 10.3)"}
-    for st, title in titles.items():
-        rows = [e for e in rep["requirements"] if e["status"] == st]
+    k = rep.get("skipped") or {}
+    if s["skip"]:
+        out += [f"Of the skipped: {k.get('not_run', 0)} not run, {k.get('not_applicable', 0)} not applicable.", ""]
+    for n in rep.get("notices") or []:
+        out += [f"**Note.** {n}", ""]
+    titles = {"fail": ("Failed (MUST)", None), "warn": ("Warnings (SHOULD not met)", None),
+              "not_run": ("Skipped: not run (not a pass; run it or have a person check it, see SPEC 10.3)", "skip"),
+              "not_applicable": ("Skipped: not applicable (the context does not use the feature)", "skip")}
+    for key, (title, status) in titles.items():
+        rows = [e for e in rep["requirements"]
+                if e["status"] == (status or key) and (status is None or e.get("skip_kind") == key)]
         if not rows:
             continue
         out += [f"## {title}", ""]

@@ -16,7 +16,7 @@ def erase_request(t, rec):
     tok = t.token(["memory:read", "memory:write", "erase:write"])
     tools = _listed(t, tok)
     if "erase_request" not in tools:
-        rec.skip("TOOL-18", "erase_request is not offered")
+        rec.na("TOOL-18", "erase_request is not offered")
         rec.skip("ERA-02", "erase_request is not offered (check subject matching on the management surface)")
         return
     t.need_writes()
@@ -41,7 +41,7 @@ def erase_request(t, rec):
 def export_create(t, rec):
     tok = t.token(["memory:read", "export:read", "audit:read"])
     if "export_create" not in _listed(t, tok):
-        rec.skip("TOOL-19", "export_create is not offered")
+        rec.na("TOOL-19", "export_create is not offered")
         rec.skip("EXP-04", "export_create is not offered (check the export audit entry on the management surface)")
         return
     t.need_writes()

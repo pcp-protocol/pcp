@@ -59,7 +59,7 @@ def run(args):
     settled = {f.id for f in findings if f.status != "skip"}
     seen, kept = set(), []
     for f in findings:
-        key = (f.id, f.status, f.message)
+        key = (f.id, f.status, f.message, f.skip_kind)
         if (f.status == "skip" and f.id in settled) or key in seen:
             continue
         seen.add(key)
@@ -70,6 +70,8 @@ def run(args):
         if rid not in covered and not r.suite:
             findings.append(_manual(r))
     summary = {s: sum(1 for f in findings if f.status == s) for s in Recorder.STATUSES}
+    not_run = sum(1 for f in findings if f.skip_kind == "not_run")
+    notices = _notices(t)
     report = {
         "suite": f"pcp-conformance {__version__}",
         "endpoint": opts.endpoint,
@@ -77,6 +79,7 @@ def run(args):
         "claims": (t._cache.get("doc") or {}).get("conformance"),
         "duration_s": round(time.time() - started, 1),
         "summary": summary,
+        "notices": notices,
         "findings": [dict(f.as_dict(), level=reqs[f.id].level, section=reqs[f.id].section) for f in findings],
     }
     if args.json:
@@ -87,13 +90,19 @@ def run(args):
         for f in sorted(findings, key=lambda f: (order[f.status], f.id)):
             if f.status == "manual" and not args.verbose:
                 continue
-            line = f"{f.status.upper():6} {f.id:9} {reqs[f.id].level:6} §{reqs[f.id].section:10} {f.message}"
+            label = "N/A" if f.skip_kind == "not_applicable" else f.status.upper()
+            line = f"{label:6} {f.id:9} {reqs[f.id].level:6} §{reqs[f.id].section:10} {f.message}"
             print(_paint(f.status, line, color))
         print(f"\n{summary['pass']} pass, {summary['fail']} fail, {summary['warn']} warn, "
               f"{summary['skip']} skip, {summary['manual']} manual or review (use -v to list)")
+        if summary["skip"]:
+            print(f"skipped: {summary['skip'] - not_run} not applicable (N/A), {not_run} not run (SKIP). "
+                  "The ones not run still count: SPEC §10.3")
+        for n in notices:
+            print(_paint("warn", f"NOTE   {n}", color))
     if args.report or args.report_md or args.report_dir:
         full = reportmod.build(reqs, findings, opts, (t._cache.get("doc") or {}), t._cache.get("doc_url"),
-                               args.profile or _profile_of(t), report["duration_s"])
+                               args.profile or _profile_of(t), report["duration_s"], notices)
         full["findings"] = report["findings"]  # the list `run` has always written
         paths = {}
         if args.report_dir:
@@ -122,6 +131,15 @@ def _profile_of(t):
     if isinstance(profiles, list) and len(profiles) == 1:
         return str(profiles[0])
     return "unspecified"
+
+
+def _notices(t):
+    """Things a reader of the report must know that no single requirement says."""
+    doc = t._cache.get("doc")
+    if isinstance(doc, dict) and doc.get("export") is not True:
+        return ["No conformance claim is possible from this run: discovery `export` is not `true` "
+                "(SPEC §10.3 item 4), so the export checks did not run."]
+    return []
 
 
 def _manual(r):

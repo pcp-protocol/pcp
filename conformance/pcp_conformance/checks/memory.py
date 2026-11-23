@@ -228,8 +228,8 @@ def step_up(t, rec):
 @check("PROF-03", "PROF-06", "PROF-08", tools=("profile_update", "profile_get"), writes=True)
 def profile_rules(t, rec):
     if t.kind() == "team":
-        rec.skip("PROF-03", "checked on personal and work contexts")
-        rec.skip("PROF-06", "team context")
+        rec.na("PROF-03", "checked on personal and work contexts")
+        rec.na("PROF-06", "team context")
         return
     t.need_writes()
     c = t.mcp(t.token(["profile.core:read", "profile.core:write"]))
@@ -244,7 +244,7 @@ def profile_rules(t, rec):
                "profile_update stored data in pcp.legal, which has no published schema")
     exts = (t.context_doc or {}).get("profile_extensions") or []
     if not exts:
-        rec.skip("PROF-06", "no profile extensions in this context")
+        rec.na("PROF-06", "no profile extensions in this context")
         return
     core_only = t.mcp(t.token(["profile.core:read"])).call("profile_get", {"namespaces": exts})
     leaked = (core_only.structured() or {}).get("extensions") or {}
@@ -279,13 +279,13 @@ def audit(t, rec):
     if t.custody() == "user":
         rec.expect("KEY-07", ok, "decrypting requests are missing from the audit log")
     else:
-        rec.skip("KEY-07", "not user custody")
+        rec.na("KEY-07", "not user custody")
 
 
 @check("KEY-05", writes=True)
 def custody_canary(t, rec):
     if t.custody() != "user":
-        rec.skip("KEY-05", "not user custody")
+        rec.na("KEY-05", "not user custody")
         return
     if not t.opts.scan_path:
         rec.skip("KEY-05", "pass --scan-path with the server's data directory to search it for the canary")

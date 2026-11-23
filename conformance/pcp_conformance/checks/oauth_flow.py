@@ -38,7 +38,7 @@ def _auto(t):
 def dcr_rules(t, rec):
     _, _, meta = t.as_meta
     if not meta or not meta.get("registration_endpoint"):
-        rec.skip("AUTH-20", "no registration_endpoint (DCR not offered)")
+        rec.na("AUTH-20", "no registration_endpoint (DCR not offered)")
         return
     t.need_register(strict=True)
     good = t.oauth.register()
@@ -57,7 +57,7 @@ def dcr_rules(t, rec):
 def cimd_hardening(t, rec):
     _, _, meta = t.as_meta
     if not meta or not meta.get("client_id_metadata_document_supported"):
-        rec.skip("AUTH-19", "CIMD not advertised")
+        rec.na("AUTH-19", "CIMD not advertised")
         return
     t.need_register(strict=True)
     problems = []

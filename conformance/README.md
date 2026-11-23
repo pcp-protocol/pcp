@@ -52,17 +52,19 @@ that need more say so and are skipped. Widen it with:
 | `--interactive` | Run OAuth in your browser: the suite prints an authorization URL and catches the redirect on a loopback port. Each scope set the checks need is one approval. |
 | `--token T [--token-scopes "a b"]` | Use an access token you already have, instead of OAuth. Checks that need other scopes are skipped. |
 | `--allow-register` | Register OAuth clients and check the DCR rules, and probe the CIMD fetcher with addresses it must refuse (it should never fetch them). `--interactive` and `--allow-writes` also register the one client they need, but only this flag runs the registration and CIMD checks. |
-| `--allow-writes` | Write test pages. Every page lives under `pcp-conformance/<run id>/` (one under `style/`, for the §5.7 default) and carries a unique canary string. **Use a throwaway context**: PCP has no tool to delete pages, so remove them with erasure afterwards. |
+| `--allow-writes` | Write test pages. Every page lives under `pcp-conformance/<run id>/` (one under `style/`, for the §5.7 default) and carries a unique canary string. **Use a throwaway context** and delete the context afterwards: no required PCP tool deletes pages. If the server offers `erase_request`, that removes them too. |
 | `--allow-load` | Send a burst of bad token requests to check rate limiting (SEC-01). Only against a test deployment. |
 | `--other-endpoint URL` | A second context of the same person, for audience binding (AUTH-25) and separation (CTX-06). With `--allow-writes` the suite writes one canary page into it too, so it must also be a throwaway context. |
 | `--second-token T` or `--second-login NAME`, `--private-partition P` | A second principal and a partition it cannot read, for the team checks. |
 | `--delegated-token T` | An agent token acting for a human, for the delegation checks. |
 | `--scan-path DIR` | The server's data directory. Under `user` custody the suite writes a canary and searches every file for it (KEY-05). |
 | `--revocation-wait S` | How long to wait for a revoked grant to stop working (default 300, the SPEC's bound). |
-| `--only IDS` | Run only the checks that cite these ids. |
+| `--only IDS` | Run only the checks that cite these ids. A check that cites several ids runs whole, so the report can list ids you did not name. |
 | `--profile personal\|team` | The profile the run is for, written into the report. Without it the report uses the server's own claim when it names exactly one profile, else `unspecified`. |
 | `--json` | Print the report to standard output as JSON instead of the readable list. |
 | `--report FILE`, `--report-md FILE`, `--report-dir DIR` | Write the JSON report, the Markdown report, or both (`DIR/pcp-report.json` and `DIR/pcp-report.md`). The report is written even when a check fails. |
+
+Give the server a port nothing else on the machine uses: the loopback check (SEC-05) connects to the machine's other addresses on that port, and cannot tell your server from another program that answers there.
 
 The exit status is 1 if any MUST failed. A failed SHOULD is a warning. A
 skipped check is not a pass: SPEC §10.3 says how skipped requirements count
@@ -90,10 +92,10 @@ The JSON report records the suite name and version, the PCP version (`spec_versi
 | `pass` | Checked and met. |
 | `fail` | A MUST was not met. The exit status is 1. |
 | `warn` | A SHOULD was not met. |
-| `skip` | The check could not run, for example for lack of an option or a feature the server does not use. Not a pass: see SPEC §10.3. |
+| `skip` | The check did not run. `skip_kind` says why: `not_applicable` when the context does not use the feature (for example partitions or review), `not_run` when the run lacked an option, a token or an approval. A `not_run` skip is not a pass: SPEC §10.3 says it still has to pass in another run or be checked by a person. The readable output shows the first kind as `N/A` and the second as `SKIP`. |
 | `manual` | Not checkable from outside (`M`, `R`, and `A` requirements); a person checks it. |
 
-`requirement_summary` counts the entries by status. The older `findings` list, one row per check result, is still written. The Markdown report holds the same header, the counts, every failure, warning and skip with its message, and the ids that passed, so it can be linked from a claim or attached to a build. A claim links the report and names the same suite version, PCP version and profile.
+`requirement_summary` counts the entries by status, and `skipped` counts the skips of each kind. `notices` lists what a reader must know that no single requirement says: for example that discovery `export` is not `true`, so no claim is possible from the run (SPEC §10.3 item 4). The older `findings` list, one row per check result, is still written. The Markdown report holds the same header, the counts, every failure, warning and skip with its message, and the ids that passed, so it can be linked from a claim or attached to a build. A claim links the report and names the same suite version, PCP version and profile.
 
 ## The reference server
 
