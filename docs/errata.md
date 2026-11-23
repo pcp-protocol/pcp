@@ -32,13 +32,13 @@ Each item has one of these states:
 
 | Id | Where | Short description | State |
 |---|---|---|---|
-| [E-01](#e-01) | SEC-05, suite | The check can fail because of another process on the test machine | Fix proposed |
-| [E-02](#e-02) | Suite README, `--only` | A check that cites several ids runs whole | Fix proposed |
+| [E-01](#e-01) | SEC-05, suite | The check can fail because of another process on the test machine | Fixed |
+| [E-02](#e-02) | Suite README, `--only` | A check that cites several ids runs whole | Fixed |
 | [E-03](#e-03) | SPEC §10.3, suite report | One id can have more than one result in a run | Open |
-| [E-04](#e-04) | SPEC §10.3, suite report | Two kinds of skip read the same | Fix proposed |
+| [E-04](#e-04) | SPEC §10.3, suite report | Two kinds of skip read the same | Fixed |
 | [E-05](#e-05) | SPEC §10.3, `docs/conformance.md` | A run does not know which profile it is for | Open |
-| [E-06](#e-06) | Suite README, `--allow-writes` | No required tool can remove the suite's test pages | Fix proposed |
-| [E-07](#e-07) | SPEC §10.3 item 4, suite | A run with `export` set to `false` can look clean | Fix proposed |
+| [E-06](#e-06) | Suite README, `--allow-writes` | No required tool can remove the suite's test pages | Fixed |
+| [E-07](#e-07) | SPEC §10.3 item 4, suite | A run with `export` set to `false` can look clean | Fixed |
 | [E-08](#e-08) | SPEC §9.1.4 | `device` custody does not say who approves a grant | Moved |
 
 ## Items
@@ -56,7 +56,7 @@ Until this is settled: run the suite on a machine where nothing else listens
 on the server's port, and say so in the report if SEC-05 was checked another
 way.
 
-State: Fix proposed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The failure message now says that another program may be answering, and the suite README says to give the server a port nothing else uses.
+State: Fixed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The failure message now says that another program may be answering, and the suite README says to give the server a port nothing else uses.
 
 ### E-02
 
@@ -65,7 +65,7 @@ and reports DISC-12 and DISC-14, because one check cites all three. The
 suite README says `--only` runs "the checks that cite these ids", which is
 accurate, but a reader can expect only the named ids in the report.
 
-State: Fix proposed in [#103](https://github.com/pcp-protocol/pcp/pull/103), which adds that sentence to the options table of the suite README.
+State: Fixed in [#103](https://github.com/pcp-protocol/pcp/pull/103), which adds that sentence to the options table of the suite README.
 
 ### E-03
 
@@ -90,7 +90,7 @@ each message.
 Until this is settled: a published claim should say, for every skipped id,
 which kind of skip it was.
 
-State: Fix proposed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The report marks each skip as not applicable or not run, and SPEC §10.3 item 1 says that only the second kind needs anything further.
+State: Fixed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The report marks each skip as not applicable or not run, and SPEC §10.3 item 1 says that only the second kind needs anything further.
 
 ### E-05
 
@@ -113,7 +113,7 @@ without it has no way to clean up through the protocol.
 Until this is settled: run write checks against a throwaway context, as SPEC
 §10.3 item 1 already asks for the `S+` checks.
 
-State: Fix proposed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The suite README now says to delete the throwaway context afterwards, and that `erase_request` also works where a server offers it.
+State: Fixed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The suite README now says to delete the throwaway context afterwards, and that `erase_request` also works where a server offers it.
 
 ### E-07
 
@@ -126,7 +126,7 @@ while it is `false`.
 Until this is settled: a clean report is not enough for a claim on its own.
 Check §10.3 item 4 by hand.
 
-State: Fix proposed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The report says in a note at the top that no claim is possible while `export` is not `true`.
+State: Fixed in [#103](https://github.com/pcp-protocol/pcp/pull/103). The report says in a note at the top that no claim is possible while `export` is not `true`.
 
 ### E-08
 
