@@ -26,13 +26,13 @@ cd "$HERE"
 "$PY" -m pcp_conformance self-check
 echo "== personal context"
 "$PY" -m pcp_conformance run --endpoint "$BASE/dana/mcp" --other-endpoint "$BASE/acme-dana/mcp" \
-  --allow-writes --allow-register --revocation-wait 10
+  --profile personal --allow-writes --allow-register --revocation-wait 10
 echo "== work context"
 "$PY" -m pcp_conformance run --endpoint "$BASE/acme-dana/mcp" --other-endpoint "$BASE/dana/mcp" \
-  --allow-writes --revocation-wait 10
+  --profile personal --allow-writes --revocation-wait 10
 echo "== team context"
 "$PY" -m pcp_conformance run --endpoint "$BASE/crew/mcp" --second-login scout --private-partition private \
-  --allow-writes --allow-register --allow-load --revocation-wait 10
+  --profile team --allow-writes --allow-register --allow-load --revocation-wait 10
 kill $SERVER; wait $SERVER 2>/dev/null || true
 
 # Each deliberate violation must make the suite fail.

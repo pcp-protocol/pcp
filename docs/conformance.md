@@ -26,6 +26,10 @@ it as a warning.
   (servers on the person's own machine), `routes` (contexts with
   `alternate_endpoints`): the requirement applies when the server uses it.
 
+A claim is for one profile (SPEC §10.3). Its requirements are the rows marked
+`all`, the rows marked with that profile's letter, and the feature rows the
+context uses.
+
 **Check.** How it is verified:
 
 - `S`: the suite checks it black-box with one token or none.

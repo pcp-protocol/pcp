@@ -34,9 +34,9 @@ Each item has one of these states:
 |---|---|---|---|
 | [E-01](#e-01) | SEC-05, suite | The check can fail because of another process on the test machine | Fixed |
 | [E-02](#e-02) | Suite README, `--only` | A check that cites several ids runs whole | Fixed |
-| [E-03](#e-03) | SPEC §10.3, suite report | One id can have more than one result in a run | Open |
+| [E-03](#e-03) | SPEC §10.3, suite report | One id can have more than one result in a run | Fix proposed |
 | [E-04](#e-04) | SPEC §10.3, suite report | Two kinds of skip read the same | Fixed |
-| [E-05](#e-05) | SPEC §10.3, `docs/conformance.md` | A run does not know which profile it is for | Open |
+| [E-05](#e-05) | SPEC §10.3, `docs/conformance.md` | A run does not know which profile it is for | Fix proposed |
 | [E-06](#e-06) | Suite README, `--allow-writes` | No required tool can remove the suite's test pages | Fixed |
 | [E-07](#e-07) | SPEC §10.3 item 4, suite | A run with `export` set to `false` can look clean | Fixed |
 | [E-08](#e-08) | SPEC §9.1.4 | `device` custody does not say who approves a grant | Moved |
@@ -75,7 +75,7 @@ report keeps one entry per id with a single status, worst first: fail, warn,
 pass, skip, manual. SPEC §10.3 does not say how a mixed result for one id
 counts toward a claim.
 
-State: Open.
+State: Fix proposed in [#104](https://github.com/pcp-protocol/pcp/pull/104), which adds the rule to SPEC §10.3: one result per id, the first of failed, SHOULD not met, passed, skipped. This changes what counts toward a claim, so it follows the comment period.
 
 ### E-04
 
@@ -101,7 +101,7 @@ choose checks, so a report for a Personal server still lists team-only ids
 as skipped. SPEC §10.3 says a claim covers "every MUST of the profile that
 applies", and nothing says where that list comes from for a run.
 
-State: Open.
+State: Fix proposed in [#104](https://github.com/pcp-protocol/pcp/pull/104). SPEC §10.3 says the list is the Profile column of `docs/conformance.md`, and a report used for a claim names its profile. The suite marks requirements of the other profile as not applicable. This changes what counts toward a claim, so it follows the comment period.
 
 ### E-06
 

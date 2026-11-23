@@ -2384,6 +2384,18 @@ that context:
 3. the `M` and `R` requirements that apply have been checked; and
 4. discovery `export` is `true` (§8.1).
 
+The requirements of a profile are the rows of
+[`docs/conformance.md`](docs/conformance.md) whose Profile column is `all` or
+names that profile (`P` for Personal, `T` for Team), and each row that names
+a feature, a tool or a custody the context uses (§10.1). A suite run is for
+one profile, and a report used for a claim MUST name it.
+
+Each requirement id has one result in a run. Where more than one check
+covers an id, the result is the first of these that any of them gives:
+failed, SHOULD not met, passed, skipped. An id skipped for more than one
+reason counts as not run, as in item 1, unless every reason is that the
+context does not use the feature.
+
 A server MUST NOT claim a profile it fails: the claim is a statement the
 suite can check (§1.1 principle 6). A failed SHOULD does not prevent a claim.
 

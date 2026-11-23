@@ -69,9 +69,11 @@ def run(args):
     for rid, r in reqs.items():
         if rid not in covered and not r.suite:
             findings.append(_manual(r))
+    profile = args.profile or _profile_of(t)
+    _apply_profile(findings, reqs, profile)
     summary = {s: sum(1 for f in findings if f.status == s) for s in Recorder.STATUSES}
     not_run = sum(1 for f in findings if f.skip_kind == "not_run")
-    notices = _notices(t)
+    notices = _notices(t, profile)
     report = {
         "suite": f"pcp-conformance {__version__}",
         "endpoint": opts.endpoint,
@@ -102,7 +104,7 @@ def run(args):
             print(_paint("warn", f"NOTE   {n}", color))
     if args.report or args.report_md or args.report_dir:
         full = reportmod.build(reqs, findings, opts, (t._cache.get("doc") or {}), t._cache.get("doc_url"),
-                               args.profile or _profile_of(t), report["duration_s"], notices)
+                               profile, report["duration_s"], notices)
         full["findings"] = report["findings"]  # the list `run` has always written
         paths = {}
         if args.report_dir:
@@ -133,9 +135,28 @@ def _profile_of(t):
     return "unspecified"
 
 
-def _notices(t):
+PROFILE_ONLY = {"personal": "P", "team": "T"}
+
+
+def _apply_profile(findings, reqs, profile):
+    """SPEC 10.3: a run is for one profile. A requirement of the other profile
+    only, which no check settled, does not apply to this run."""
+    if profile not in PROFILE_ONLY:
+        return
+    other = next(v for k, v in PROFILE_ONLY.items() if k != profile)
+    name = {"P": "Personal", "T": "Team"}[other]
+    for f in findings:
+        if reqs[f.id].profile.strip() == other and f.status in ("skip", "manual"):
+            f.status, f.skip_kind = "skip", "not_applicable"
+            f.message = f"belongs to the {name} profile only; this run is for the {profile} profile"
+
+
+def _notices(t, profile="unspecified"):
     """Things a reader of the report must know that no single requirement says."""
     doc = t._cache.get("doc")
+    if profile not in PROFILE_ONLY:
+        return ["This run names no profile, so every requirement was treated as possibly applying. "
+                "A claim is for one profile (SPEC §10.3): pass --profile personal or --profile team."] + _notices(t, "personal")
     if isinstance(doc, dict) and doc.get("export") is not True:
         return ["No conformance claim is possible from this run: discovery `export` is not `true` "
                 "(SPEC §10.3 item 4), so the export checks did not run."]
@@ -204,7 +225,7 @@ def main(argv=None):
     r.add_argument("--insecure", action="store_true", help="do not verify TLS certificates")
     r.add_argument("--timeout", type=int, default=15)
     r.add_argument("--json", action="store_true", help="print the report as JSON")
-    r.add_argument("--profile", help="the profile this run is for (personal or team), recorded in the report")
+    r.add_argument("--profile", choices=tuple(PROFILE_ONLY), help="the profile this run is for (personal or team), recorded in the report")
     r.add_argument("--report", help="also write the JSON report to this file")
     r.add_argument("--report-md", help="also write a readable Markdown report to this file")
     r.add_argument("--report-dir", help="write pcp-report.json and pcp-report.md into this directory")
