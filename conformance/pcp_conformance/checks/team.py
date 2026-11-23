@@ -33,7 +33,7 @@ def _owner(t):
 def partitions(t, rec):
     if "partitions" not in t.features():
         for rid in ("MEM-12", "MEM-13", "SCOPE-04", "AUD-06"):
-            rec.skip(rid, "the context does not use partitions")
+            rec.na(rid, "the context does not use partitions")
         return
     private = t.opts.private_partition
     if not private:
@@ -79,7 +79,7 @@ def partitions(t, rec):
 def review(t, rec):
     if "review" not in t.features():
         for rid in ("MEM-14", "MEM-15", "SEC-11"):
-            rec.skip(rid, "the context does not use review")
+            rec.na(rid, "the context does not use review")
         return
     t.need_writes()
     a = _owner(t)

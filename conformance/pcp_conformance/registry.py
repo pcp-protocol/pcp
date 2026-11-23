@@ -61,11 +61,17 @@ def check(*ids, tools=(), writes=False, needs=()):
 
 
 class Finding:
-    def __init__(self, rid, status, message=""):
+    def __init__(self, rid, status, message="", skip_kind=None):
         self.id, self.status, self.message = rid, status, message
+        # For a skip: "not_applicable" (the context does not use the feature)
+        # or "not_run" (the run lacked an option, a token or an approval).
+        self.skip_kind = (skip_kind or "not_run") if status == "skip" else None
 
     def as_dict(self):
-        return {"id": self.id, "status": self.status, "message": self.message}
+        d = {"id": self.id, "status": self.status, "message": self.message}
+        if self.skip_kind:
+            d["skip_kind"] = self.skip_kind
+        return d
 
 
 class Skip(Exception):
@@ -80,12 +86,12 @@ class Recorder:
     def __init__(self, reqs, check_name):
         self.reqs, self.check_name, self.findings = reqs, check_name, []
 
-    def _add(self, rid, status, message):
+    def _add(self, rid, status, message, skip_kind=None):
         if rid not in self.reqs:
             raise KeyError(f"{self.check_name} cites unknown requirement {rid}")
         if status == "fail" and self.reqs[rid].level == "SHOULD":
             status = "warn"
-        self.findings.append(Finding(rid, status, message))
+        self.findings.append(Finding(rid, status, message, skip_kind))
 
     def ok(self, rid, message=""):
         self._add(rid, "pass", message)
@@ -98,7 +104,13 @@ class Recorder:
         return cond
 
     def skip(self, rid, message):
-        self._add(rid, "skip", message)
+        """The check could not run here: an option, a token or an approval was
+        missing. SPEC 10.3 still wants it run elsewhere or checked by a person."""
+        self._add(rid, "skip", message, "not_run")
+
+    def na(self, rid, message):
+        """The context does not use the feature, so the requirement does not apply."""
+        self._add(rid, "skip", message, "not_applicable")
 
 
 def self_check(reqs):

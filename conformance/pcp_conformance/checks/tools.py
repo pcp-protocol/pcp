@@ -122,8 +122,8 @@ def tool_list(t, rec):
         rec.expect("TOOL-02", not cbad, f"bad connection ids: {cbad}")
         rec.expect("TOOL-14", not open_world, f"connection tools without openWorldHint: true: {open_world}")
     else:
-        rec.skip("TOOL-02", "no connections")
-        rec.skip("TOOL-14", "no connections")
+        rec.na("TOOL-02", "no connections")
+        rec.na("TOOL-14", "no connections")
     exts = doc.get("extensions") or []
     other = [x["name"] for x in tools if x["name"] not in STANDARD and x["name"].split("_")[0] not in conns]
     if other:
@@ -131,7 +131,7 @@ def tool_list(t, rec):
         rec.expect("TOOL-15", bool(exts) or bool(conns),
                    f"tools {other} are neither standard nor declared as an extension or connection")
     else:
-        rec.skip("TOOL-15", "no extension tools")
+        rec.na("TOOL-15", "no extension tools")
 
 
 @check("TOOL-06", "TOOL-07", "TOOL-08", "TOOL-09", "TOOL-10", "TOOL-12", "MEM-19", "PROF-01", "PROF-02", "PROF-05",
@@ -195,7 +195,7 @@ def tool_results(t, rec):
         if kind in ("personal", "work"):
             rec.expect("PROF-01", sc.get("profile_type") == "core" and (prof is None or not t.schema_errors("profile.core.schema.json", prof)),
                        f"profile_type {sc.get('profile_type')!r}, or the profile fails profile.core")
-            rec.skip("PROF-02", "not a team context")
+            rec.na("PROF-02", "not a team context")
         rec.expect("PROF-05", "profile" in sc, "profile_get output has no profile member")
         bad = c.call("profile_get", {"namespaces": ["pcp.legal"]})
         leaked = ((bad.structured() or {}).get("extensions") or {}).get("pcp.legal")
@@ -207,16 +207,16 @@ def tool_results(t, rec):
             rec.ok("PROF-08", "nothing returned for pcp.legal; the write half runs in profile_rules")
     elif kind == "team" and (t.context_doc or {}).get("profile", "team") == "none":
         for rid in ("PROF-01", "PROF-02", "PROF-05", "PROF-08"):
-            rec.skip(rid, "the team context has no profile (profile: none)")
+            rec.na(rid, "the team context has no profile (profile: none)")
     elif kind == "team":
         tg = c.call("profile_get", {})
         sc = tg.structured() or {}
         prof = sc.get("profile")
-        rec.skip("PROF-01", "team context")
+        rec.na("PROF-01", "team context")
         rec.expect("PROF-02", prof is None or not t.schema_errors("profile.team.schema.json", prof),
                    "the team profile fails profile.team")
         rec.expect("PROF-05", tg.is_tool_error() or "profile" in sc, "profile_get output has no profile member")
-        rec.skip("PROF-08", "team context")
+        rec.na("PROF-08", "team context")
     else:
         for rid in ("PROF-01", "PROF-02", "PROF-05", "PROF-08"):
             rec.skip(rid, "profile_get not callable with this token")
@@ -244,7 +244,7 @@ def mcp_mechanics(t, rec):
 def localhost_profile(t, rec):
     if not is_loopback(t.endpoint):
         for rid in ("SEC-05", "SEC-06", "SEC-07"):
-            rec.skip(rid, "not a loopback server")
+            rec.na(rid, "not a loopback server")
         return
     import json as _json
     import socket
@@ -264,7 +264,8 @@ def localhost_profile(t, rec):
         sock.settimeout(2)
         reachable = sock.connect_ex((ip, port)) == 0
         sock.close()
-        rec.expect("SEC-05", not reachable, f"the server also listens on {ip}:{port}")
+        rec.expect("SEC-05", not reachable, f"something answers on {ip}:{port}. If it is your server, it does not bind "
+                   "loopback only. If it is another program, give the server a port nothing else uses and run again")
     else:
         rec.skip("SEC-05", "no non-loopback address to probe")
     tok = t.any_token()["access_token"]
