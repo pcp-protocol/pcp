@@ -900,8 +900,9 @@ Which partitions and principals need review is server policy.
 5. A server MAY resolve reviews only on its own management surface and not
    offer `review_resolve`. It MUST still keep the review fields.
 
-Imports into a context with the `review` feature land as `proposed`
-(§8.7.3 item 2).
+Imports into a context with the `review` feature land as `proposed`,
+unless the controller approves the whole import, as current pages or as
+reference pages (§8.7.3 item 2).
 
 ### 5.5 Retrieval requirements
 
@@ -1554,16 +1555,51 @@ For each page in the archive, an importer in import mode:
    "pcp"`, `at`, `exporter`, the source `context`, the source `id`, the
    file's `sha256`, the source `recorded_at`, `source`, and `review` and
    `partition` when it changed them.
-2. **Applies review.** In a context with the `review` feature every
-   imported page is a proposal: `review: {state: proposed, generated: {by,
-   at}}`, with `by` the stamped `source.principal` and `at` the import
-   instant; the source's review object moves to `x_import.review`. The
-   target's own reviewers approve it (§5.4). A server MAY let its
-   controller approve a whole import at once; the audit entry records it
-   and each page gets `verified` by the controller. In a context without
-   `review`, imported pages are approved, and source pages that are
-   proposed or rejected are skipped (`skipped_review_state`) unless the
-   requester asks for them as approved pages.
+2. **Applies review.** The request's `import_as` says how pages land. In
+   every form the source's review object moves to `x_import.review`.
+   - `proposed` (the default in a context with the `review` feature):
+     every imported page is a proposal: `review: {state: proposed,
+     generated: {by, at}}`, with `by` the stamped `source.principal` and
+     `at` the import instant. The target's own reviewers approve it
+     (§5.4).
+   - `approved` (the default in a context without `review`): imported
+     pages are approved. In a context with `review`, a server MAY offer
+     this to the controller only, as an approval of the whole import:
+     each page gets `review: {state: approved, generated: {by, at},
+     verified: [{by, at}]}`, with the controller in `verified`.
+   - `reference`: pages are approved as with `approved`, and each page
+     whose `lifecycle` is absent or `active` gets `lifecycle: stale`;
+     `validated`, `stale` and `archived` are kept. In a context with
+     `review`, only the controller may choose it.
+
+   Source pages that are proposed or rejected are never approved by
+   `approved` or `reference`: in a context with `review` they land as
+   proposals, and in a context without it they are skipped
+   (`skipped_review_state`) unless the requester asks for them as
+   approved pages.
+
+   **Reference imports.** A reference import records that the archive is
+   a faithful copy of what its source said, not that its content is
+   current. It is meant for bulk imports from other tools (§8.7.5): a
+   workspace, a wiki, a folder of documents. Nobody can sensibly review
+   hundreds of pages one by one, and until someone does, §5.4 item 4
+   keeps proposals out of retrieval. A server that offers `approved` in a
+   context with `review` SHOULD also offer `reference`.
+   - Reference pages are retrieved as §5.5 item 2 says for `stale` pages:
+     when asked, or when no current page matches, and always with their
+     dates.
+   - Promoting a reference page is an ordinary change: a write that sets
+     `lifecycle` to `active` or `validated`, which in a context with
+     `review` goes through §5.4 like any other write, or a new page whose
+     `derived_from` names it.
+   - A reference import never revises or replaces an existing page:
+     `on_conflict` is `skip` (its default) or `rename`, and a request
+     with `revise` or `replace` is rejected before anything is written.
+
+   Choosing `approved` in a context with `review`, or `reference` in any
+   context, writes an audit entry of its own besides item 11's:
+   `channel: "import"`, `action: "import.approve"` or
+   `"import.reference"`, `categories: ["review"]`, and the counts.
 3. **Imports pages only.** Revisions and history belong to the source's
    review and versioning; they are reported, not imported. The source's
    audit log and receipts describe another context and are not imported.
@@ -1579,7 +1615,8 @@ For each page in the archive, an importer in import mode:
    - by a page with the same idempotency key (item 6): `skipped_duplicate`;
    - by a page the importer cannot read: `skipped_conflict`, or `renamed`
      under `on_conflict: rename`, revealing nothing else (§5.2.2);
-   - otherwise as the request's `on_conflict` says. `revise` (the default
+   - otherwise as the request's `on_conflict` says (a reference import
+     allows only `skip` and `rename`, item 2). `revise` (the default
      with `review`) makes the incoming page a pending revision of the
      existing one. `skip` (the default without `review`) reports
      `skipped_conflict`. `rename` stores it at `<path>-imported-<n>`, with
@@ -1641,8 +1678,9 @@ Extension data follows §8.5 item 4 in both modes.
 #### 8.7.4 Import report
 
 An import returns a report conforming to `$defs/import_report` in the
-manifest schema: mode, status (`complete`, `partial` or `rejected`), the
-archive's exporter, `exported_at` and manifest hash, counts per outcome,
+manifest schema: mode, status (`complete`, `partial` or `rejected`), in
+import mode the form the pages landed in (`import_as`: `proposed`,
+`approved` or `reference`), the archive's exporter, `exported_at` and manifest hash, counts per outcome,
 and per item outcomes with paths. The report goes only to the requester;
 the audit entry carries the counts.
 
@@ -1655,7 +1693,8 @@ formats are in
 hashes, the importer computes `x_import.sha256` over the record as received
 (for JSON records, over its RFC 8785 canonical form). An export produced by
 a model summarizing memory is lossy by design; an importer SHOULD use the
-source's lossless listing instead when one exists.
+source's lossless listing instead when one exists. Bulk imports from other
+tools are what the reference form (§8.7.3 item 2) is for.
 
 ### 8.8 Round trip
 

@@ -101,7 +101,7 @@ and unwraps, and the host stores wrapped copies.
 
 | Method and path | Behavior |
 |---|---|
-| `POST /imports` | Upload an archive (`multipart/form-data`: `archive` and `options`). Options: `mode` (`restore` or `import`), `dry_run`, `format` (`pcp` or a foreign format, docs/interop.md), `on_conflict` (`revise`, `skip`, `rename`, `replace`), `partition`, `partition_map`, `principal_map`, `include_profile`, `approve_all` (controller only, SPEC §8.7.3 item 2). Returns the import report (`export.manifest.schema.json#/$defs/import_report`), or 202 and an id for long imports. `restore` into a context that is not empty fails with 409 `conflict`. |
+| `POST /imports` | Upload an archive (`multipart/form-data`: `archive` and `options`). Options: `mode` (`restore` or `import`), `dry_run`, `format` (`pcp` or a foreign format, docs/interop.md), `on_conflict` (`revise`, `skip`, `rename`, `replace`), `partition`, `partition_map`, `principal_map`, `include_profile`, `import_as` (`proposed`, `approved` or `reference`, SPEC §8.7.3 item 2; in a context with `review`, `approved` and `reference` are for the controller only). `approve_all: true`, from earlier drafts, means `import_as: "approved"`. Returns the import report (`export.manifest.schema.json#/$defs/import_report`), or 202 and an id for long imports. `restore` into a context that is not empty fails with 409 `conflict`. |
 | `GET /imports/{id}` | The report. |
 
 ### Erasure
