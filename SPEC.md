@@ -782,7 +782,8 @@ REQUIRED: `title`, `updated`.
 | `valid_from` / `valid_until` | RFC 3339 date or date-time | Valid time: when the fact is or was true. |
 | `recorded_at` | RFC 3339 UTC date-time | Transaction time: when the context first recorded the page. Server-stamped on creation, never changed afterwards. |
 | `expires` | RFC 3339 UTC date-time | Retention: after this instant the page MUST NOT be returned and SHOULD be deleted. Distinct from `valid_until`, which keeps the page as history. |
-| `partition` | partition name (default `default`) | Which partition holds the page (§5.3). |
+| `partition` | partition name (default `default`) | The page's owner partition (§5.3). |
+| `also_in` | array of partition names | Further partitions whose readers may read the page (§7.3). Never the owner partition. Absent or empty means none. |
 | `source` | object | Where the page came from: `origin`, `basis`, `principal`, `on_behalf_of`, `client`, `session`, `at` (below). |
 | `derived_from` | array of paths | Pages this one was distilled from or supersedes. |
 | `relations` | `[{ rel, target, confidence? }]` | Typed edges. `rel` is `supersedes`, `contradicts`, `refines` or `about`, or a namespaced relation `<prefix>:<name>` (for example `x-bm:pairs_with`) kept so imports stay lossless. Clients resolve conflicts with them; the server needs no graph engine. |
@@ -848,7 +849,10 @@ presented as current without its dates, but the server MUST NOT rewrite its
 ### 5.3 Partitions
 
 A **partition** is a named subset of a context's pages with its own access
-list. Every page is in exactly one partition. Names match
+list. Every page is in exactly one partition, its **owner partition**, named
+by `partition`. In a context with the `partitions` feature a page MAY also
+list **further partitions** in `also_in`: their readers may read the page,
+and nothing else about the page depends on them (§7.3). Names match
 `[a-z0-9][a-z0-9_-]{0,63}`. Every context has the partition `default`.
 
 1. Access to a partition is decided by the server's per-principal access
@@ -858,7 +862,8 @@ list. Every page is in exactly one partition. Names match
    private working memory. PCP needs no separate flag for it.
 3. Partitions and sensitivity are independent; both gates apply.
 4. Moving a page to another partition (changing `partition`) requires
-   `write` on both partitions.
+   `write` on both partitions. A further partition that becomes the owner
+   leaves `also_in`; the other further partitions stay.
 5. A principal MUST NOT learn the names or contents of partitions it cannot
    read, including through counts, errors or search ranking.
 6. `partition_list` (§6.2) returns the partitions the caller can access and
@@ -912,7 +917,9 @@ request. Whatever the method, `memory_search`, `memory_list` and
 
 1. **Filter before ranking.** Apply the partition access list, sensitivity
    and review visibility before ranking, counting or building snippets, so
-   nothing the caller cannot read influences what it sees.
+   nothing the caller cannot read influences what it sees. A page the
+   caller can read through a further partition (§7.3) is one result, found
+   and counted once.
 2. **Honor lifecycle and validity.** `memory_search` and `context_brief`
    return `active` and `validated` pages and current or undated pages first,
    and return `stale` or expired-validity pages only when asked
@@ -1188,6 +1195,56 @@ principal and partition.
 - The server MUST enforce it in the data query itself (§5.5 item 1).
 - Changes to the access list are audited (`categories: ["partition"]`).
 
+**Further partitions of a page.** A page's `also_in` (§5.2.1) lists
+partitions other than its owner. In a context with the `partitions`
+feature:
+
+1. **Read, and only read.** A principal with `read` on any partition in
+   `also_in` MUST be able to read the page as if it held `read` on the
+   owner partition. The token's scopes and sensitivity still apply (§5.3
+   item 3). `propose`, `write` and `review` on the page are decided by the
+   owner partition alone: a right on a further partition never lets a
+   principal change the page, see its proposals or resolve its reviews
+   (§5.4).
+2. **Listing a partition is a write to it.** Adding a partition to
+   `also_in` puts the page in front of that partition's readers, so it
+   requires `write` on the owner partition and `write` on the partition
+   added. Removing one requires `write` on the owner partition. Without
+   these the write fails with `forbidden`. A change to `also_in` is a
+   change to the page: it goes through review where the owner partition
+   needs it (§5.4), takes effect when it is approved, and is audited with
+   `categories: ["memory", "partition"]`.
+3. **Valid values.** Each name is an existing partition of the context
+   other than the owner, without repeats. Anything else, a name the caller
+   cannot read, or `also_in` in a context without the `partitions` feature,
+   MUST be rejected with `invalid_input`, with the same message in every
+   case (§5.3 item 5). An empty array clears the list. A server MUST NOT
+   drop the key silently (§5.2.2).
+4. **Updates keep what they do not name.** An update without `also_in`
+   keeps the stored list, like `partition` (§5.2.2). An update with it
+   changes only the names the caller can read; stored names the caller
+   cannot read are kept.
+5. **What a reader sees.** A page is returned with its `partition`, and
+   with only those names in `also_in` that the caller can read. A
+   principal that reads a page through a further partition therefore
+   learns the name of the owner partition, and nothing else about it. This
+   is the one exception to §5.3 item 5, and the reason controllers keep
+   sensitive words out of partition names (§7.5).
+6. **Retrieval.** `memory_search`, `memory_list`, `memory_read` and
+   `context_brief` treat a page as readable when the caller has `read` on
+   its owner partition or on a further one (§5.5 item 1). A partition
+   filter (`partitions` in `memory_search`, `partition` in `memory_list`)
+   matches a page by its owner partition, or by a further partition the
+   caller can read. A page is never returned twice.
+7. **Removing a partition.** When a partition is deleted, the server
+   removes its name from every `also_in`. When access to a further
+   partition is taken from a principal, the pages it read only through
+   that partition leave its reach at once.
+8. **Derived data.** An index, embedding or cache of a page is content of
+   the owner partition (§5.5 item 5). A server MUST NOT copy the page into
+   a further partition's store to serve it: there is one page, so there is
+   nothing to drift.
+
 ### 7.4 Delegated access
 
 When an agent principal acts for a human (the `delegation` feature), the
@@ -1263,7 +1320,11 @@ from every copy the server controls (**erasure**). All three are core.
 3. **Partial exports.** A partial archive lists what it leaves out in
    `omitted` with reason `not_authorized`, by category only. It MUST NOT
    reveal names, counts or anything else about partitions or pages the
-   requester cannot read (§5.3 item 5). A partial archive can be imported
+   requester cannot read (§5.3 item 5). A page the requester reads through
+   a further partition (§7.3) is in the archive as the requester sees it:
+   with its `partition`, and with the names in `also_in` that the requester
+   can read. Its owner partition is then listed in `context.json` by name
+   only, with an empty access list. A partial archive can be imported
    but not restored (§8.7).
 4. **Archives a server keeps** for download are content: the context's
    encryption declaration covers them, they expire after a documented
@@ -1610,7 +1671,11 @@ For each page in the archive, an importer in import mode:
    `partition_map`. Import never creates partitions or changes access
    lists, and the importer needs `propose` or `write` on every target
    partition; if it lacks one, the import is rejected before anything is
-   written.
+   written. Names in `also_in` are mapped with the `partition_map` too. A
+   further partition that has no mapping, or on which the importer lacks
+   `write`, is left out of `also_in`, kept in `x_import.also_in` and
+   reported; the page is still imported. Import never lets more
+   principals read a page than the importer could with a write (§7.3).
 8. **Converts timestamps.** Server-stamped instants (`updated`,
    `recorded_at`, `expires`, review `at`) become RFC 3339 UTC: values like
    `YYYY-MM-DD HH:MM:SS` or `YYYY-MM-DDTHH:MM:SS` without an offset are
@@ -2416,7 +2481,9 @@ archives the server has restored, and that has restored the server's.
   until then (§4.6 rule 5).
 - **Memory conflicts:** whether client-side resolution through `relations`
   (§5.2) is enough, or a server needs a normative merge and supersession rule.
-- **Pages in several partitions:** some team servers file one item under
+- **Pages in several partitions:** a page can give further partitions `read`
+  (§7.3). Whether any of them needs more than `read` is open: some team
+  servers file one item under
   several scopes, and a page has one partition today.
 - **Encryption:** searchable encryption, and a custody value for runtimes in
   attested enclaves that the operator cannot read (§9.1.4).
