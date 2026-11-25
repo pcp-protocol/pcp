@@ -529,6 +529,45 @@ supplied by the client itself and is not verified.
    that carries key material for user custody (§9.1.3) is a secret in the
    same way: the part the server needs to recognize the token is stored as
    a hash, and the key material is never stored.
+10. **Narrowing.** A grant can be narrowed without a new consent: its
+    scopes reduced to some of the ones it holds, or its partitions reduced
+    (below). A server SHOULD let the controller narrow any grant of the
+    context on the management surface (§7.5), and MAY let a principal
+    narrow its own grants. A narrowed grant:
+    - keeps its grant id. It is the same grant with less in it.
+    - is narrowed for every token issued under it, including access
+      tokens already issued, within 5 minutes, as for revocation (item 5).
+      The server checks each request against the grant as it stands, not
+      only against the token's `scope` string. A call that needs a removed
+      scope gets the §3.5 item 1 answer.
+    - stays narrowed through refresh: a refreshed token carries at most
+      the narrowed scopes (item 6). A removed scope or partition comes
+      back only through a new consent (§3.5 item 5).
+    - keeps the §7.1 implications: a scope that a kept scope implies
+      cannot be removed on its own (`memory:propose` while `memory:write`
+      stays), and removing a base scope removes the qualifiers that need
+      it (`memory:read` takes `memory.sensitive:read` and `memory:review`
+      with it), and the answer says so.
+    - keeps its wrapped key under `user` custody (§9.1.3): what it may
+      decrypt is limited by its scopes and partitions, as for any grant.
+
+    Narrowing never widens. A request that names a scope or partition the
+    grant does not hold, or that would leave the grant with no scope, is
+    rejected and changes nothing; ending a grant is revocation (item 5).
+    Each narrowing is audited (§7.5): `action: "grant.narrow"`,
+    `categories: ["grant"]`, the grant id in `object_ids` and `grant`.
+
+    **Partitions.** By default a grant reaches every partition its
+    principal's access list allows, now and later. In a context with the
+    `partitions` feature, a server MAY limit a grant to a list of
+    partitions. The effective right on a partition (§7.3) is then the
+    intersection of the token's scopes, the grant's partitions and the
+    access list, and `partition_list` (§6.2) returns only the grant's
+    partitions. Narrowing removes partitions from the list, or limits an
+    unlimited grant to some partitions. Adding a partition is widening.
+    This item sets the list on the management surface only; how a client
+    requests a partition list in OAuth (RFC 9396) is an open question
+    (§11).
 
 Sender-constrained tokens (DPoP) are deferred to v0.4.
 
@@ -1207,7 +1246,9 @@ list.
 
 - The server MUST provide a way (UI or API) to list active grants (§3.4
   item 4: client, principal, scopes, created, last used, and the stable
-  grant id that survives token refresh) and to revoke each individually. A RECOMMENDED shape is drafted in
+  grant id that survives token refresh) and to revoke each individually.
+  It SHOULD also let the controller narrow each grant without a new
+  consent (§3.4 item 10). A RECOMMENDED shape is drafted in
   [`docs/management-api.md`](docs/management-api.md) (informative).
 - The server MUST keep an **access log** per context and expose it through
   `audit_list` under `audit:read`, and to the controller on the management
@@ -1234,7 +1275,7 @@ controllers SHOULD NOT put sensitive words in partition names.
 The server MUST write an entry for every tool call (including failed
 calls; `outcome` is `ok` or the §6.3 error code), every management action,
 every review resolution, every access-list change, every grant created,
-widened or revoked, and every principal and key change.
+widened, narrowed or revoked, and every principal and key change.
 
 `audit_list` MUST NOT become a side channel. When it returns an entry to a
 principal other than the controller, it MUST remove the categories,
