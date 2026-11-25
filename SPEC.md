@@ -272,6 +272,7 @@ Clients MUST ignore fields they do not understand.
 | `features` | OPTIONAL | absent | Optional features in use: `partitions`, `review`, `delegation` (§1.4) |
 | `conformance` | OPTIONAL | absent | Conformance profiles claimed: `personal`, `team` (§10) |
 | `export` | OPTIONAL | absent | `true` claims the four commitments of §8.1: full export, a checkable archive, restore and import of the server's own archives, and no host-held archive keys. A server MUST NOT emit `true` otherwise |
+| `connection_data` | OPTIONAL | absent | `live` or `kept`: whether the host keeps anything it fetched from a connection after the request that fetched it (§9.1.1). Absent means not stated |
 
 `sse_endpoint` is removed: the HTTP+SSE transport is deprecated in MCP.
 Servers SHOULD NOT emit it, and clients MUST ignore it (§3.1).
@@ -1713,7 +1714,8 @@ on its management surface.
 #### 8.9.2 Order of operations
 
 1. **Collect** every target: pages, their revisions and history, derived
-   pages, extension records, and their index, embedding and cache entries.
+   pages, extension records, data kept from connections (§9.1.1), and their
+   index, embedding and cache entries.
    Also collect the stores the server does not delete from directly:
    backups, replicas, workers and queues.
 2. **Audit first.** Write the audit entry for the request synchronously
@@ -1838,6 +1840,26 @@ of any kind are content.
 
 Under `user` and `device` custody, `expires` stays readable so that
 retention (§8.10) runs without keys.
+
+**Data kept from connections.** Anything a host keeps from a connection
+after the request that fetched it is content: cached results, search
+indexes and embeddings of it, synced copies, and queued items. So:
+
+1. The context's `encryption` declaration covers it (§2.4). A host that
+   cannot keep such a copy under the context's custody does not keep one;
+   under `user` custody, for example, a background sync has no key outside
+   an authorized request (§9.1.3).
+2. Export treats it like the rest of the context: what the host stores as
+   pages or extension records is exported as such, and caches and indexes
+   are left out of archives like those of pages (§8.2 item 8).
+3. Erasure reaches it (§8.9.2 item 1). Erasure does not reach the source
+   itself, and the management surface SHOULD say so.
+4. A context document that says `connection_data: "live"` (§2.3) commits
+   the host to keeping nothing fetched from any of the context's
+   connections after the request that fetched it. A host that keeps
+   anything says `kept`, or leaves the field out. The field is declared
+   per context; a later contract for live and kept data may refine it,
+   including declaring it per connection.
 
 **Special categories.** Under every custody, extension namespaces of a
 special category (`pcp.health`, `pcp.residency`; §4.6 rule 4) MUST be
