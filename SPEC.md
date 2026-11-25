@@ -1951,8 +1951,35 @@ A server declares `device` only if:
 - **V4. Every path, not only the endpoint.** The management surface, sync,
   backups and exports meet V1 too: a web panel that decrypts in the browser
   meets it; a server-rendered panel does not.
+- **V5. Grants are approved on a device.** A grant (§3.4 item 4) takes
+  effect only once a principal approves it on one of their devices, and the
+  device runtime verifies every token itself. A token the host can issue on
+  its own MUST NOT unlock anything: the runtime rejects it with 401 and
+  `error="invalid_token"`, as it rejects a token for another context. This
+  holds for every way a token is obtained: a new consent, a refresh, a step-up
+  (§3.5 item 5) and managed authorization (§3.7). The runtime checks each
+  token's scopes against the grant as the principal approved it, so the host
+  cannot widen a grant either. Revoking or narrowing a grant only removes
+  access, so the runtime MAY accept it from the host's authorization server
+  as well as from a device.
 
-`e2e: true` MAY be declared only when V1 to V4 hold. An attested enclave
+Ways to meet V5 (informative):
+
+1. The authorization server and the consent screen (§3.6) run on the
+   device, reached through the same relay hostname as the MCP endpoint.
+   Discovery, metadata, authorization, token and MCP requests then all
+   travel inside the encrypted session of V2, and the host never sees a
+   code or a token.
+2. The host keeps its authorization server, and the device signs or
+   countersigns each grant when a principal approves it there. The runtime
+   accepts only tokens of grants it signed, for example by keeping the list
+   of grants itself or by checking its own signature in each token.
+
+A reviewer checks that no token the host can mint is accepted by the
+runtime: for example, the host's authorization server issues a token for a
+client no principal approved on a device, and the runtime answers 401.
+
+`e2e: true` MAY be declared only when V1 to V5 hold. An attested enclave
 the operator cannot read is not `device` custody; v0.3 has no value for it,
 so such a server declares what holds without relying on the enclave
 (deferred to v0.4).
@@ -2578,7 +2605,7 @@ Mapping the old encryption fields: storage encrypted with keys the host
 holds (`at_rest: true`), or plaintext, is `{"key_custody": "host",
 "readable_by": ["principals", "host"]}`. A server with user-held keys
 declares `user` only once it meets U1 to U6 (§9.1.3). `e2e: true` stays true
-only for `device` custody that meets V1 to V4 (§9.1.4); otherwise it becomes
+only for `device` custody that meets V1 to V5 (§9.1.4); otherwise it becomes
 `false`.
 
 ### B.2 Authorization
