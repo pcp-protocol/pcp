@@ -60,7 +60,7 @@ that need more say so and are skipped. Widen it with:
 | `--scan-path DIR` | The server's data directory. Under `user` custody the suite writes a canary and searches every file for it (KEY-05). |
 | `--revocation-wait S` | How long to wait for a revoked grant to stop working (default 300, the SPEC's bound). |
 | `--only IDS` | Run only the checks that cite these ids. A check that cites several ids runs whole, so the report can list ids you did not name. |
-| `--profile personal\|team` | The profile the run is for, written into the report. Without it the report uses the server's own claim when it names exactly one profile, else `unspecified`. |
+| `--profile personal\|team` | The profile the run is for, written into the report. Requirements that belong only to the other profile are marked not applicable. Without it the report uses the server's own claim when it names exactly one profile, else `unspecified`, and says that a claim needs a profile (SPEC §10.3). |
 | `--json` | Print the report to standard output as JSON instead of the readable list. |
 | `--report FILE`, `--report-md FILE`, `--report-dir DIR` | Write the JSON report, the Markdown report, or both (`DIR/pcp-report.json` and `DIR/pcp-report.md`). The report is written even when a check fails. |
 
@@ -95,7 +95,7 @@ The JSON report records the suite name and version, the PCP version (`spec_versi
 | `skip` | The check did not run. `skip_kind` says why: `not_applicable` when the context does not use the feature (for example partitions or review), `not_run` when the run lacked an option, a token or an approval. A `not_run` skip is not a pass: SPEC §10.3 says it still has to pass in another run or be checked by a person. The readable output shows the first kind as `N/A` and the second as `SKIP`. |
 | `manual` | Not checkable from outside (`M`, `R`, and `A` requirements); a person checks it. |
 
-`requirement_summary` counts the entries by status, and `skipped` counts the skips of each kind. `notices` lists what a reader must know that no single requirement says: for example that discovery `export` is not `true`, so no claim is possible from the run (SPEC §10.3 item 4). The older `findings` list, one row per check result, is still written. The Markdown report holds the same header, the counts, every failure, warning and skip with its message, and the ids that passed, so it can be linked from a claim or attached to a build. A claim links the report and names the same suite version, PCP version and profile.
+An id that more than one check covers has one entry, with the first of these that any check gave: `fail`, `warn`, `pass`, `skip` (SPEC §10.3). `requirement_summary` counts the entries by status, and `skipped` counts the skips of each kind. `notices` lists what a reader must know that no single requirement says: for example that discovery `export` is not `true`, so no claim is possible from the run (SPEC §10.3 item 4). The older `findings` list, one row per check result, is still written. The Markdown report holds the same header, the counts, every failure, warning and skip with its message, and the ids that passed, so it can be linked from a claim or attached to a build. A claim links the report and names the same suite version, PCP version and profile.
 
 ## The reference server
 
