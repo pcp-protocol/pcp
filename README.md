@@ -56,6 +56,16 @@ GET /.well-known/pcp.json
 
 Any MCP client can then use the standard tools (`context_brief`, `profile_get`, `memory_search`, `memory_write` and more), limited to the scopes you granted. A coding assistant gets `memory:read`; it never sees `profile.health` unless you say so.
 
+## Isn't MCP enough?
+
+MCP is how an AI calls a tool. Any client can call any server's tools, and the model adapts to whatever schema it finds. PCP doesn't change that call. It covers what MCP leaves open:
+
+- **Moving.** Export a whole context from one server and import it into another, in an archive anyone can check (SPEC §8). MCP says nothing about the data at rest.
+- **Permissions.** The same scopes, partitions, sensitivity and review on every server (SPEC §5, §7), so you can give a third-party agent part of your memory and know exactly what it can read.
+- **Same meaning everywhere.** A memory page carries its type, review state and dates on every server, so an agent that knows PCP doesn't relearn each tool.
+
+MCP is the plug. PCP is what the data means, who can read it, and how it moves.
+
 ## Try it in two minutes
 
 Run the reference server and the full conformance suite against it, on your own machine:
