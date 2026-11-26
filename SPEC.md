@@ -784,8 +784,8 @@ REQUIRED: `title`, `updated`.
 | `expires` | RFC 3339 UTC date-time | Retention: after this instant the page MUST NOT be returned and SHOULD be deleted. Distinct from `valid_until`, which keeps the page as history. |
 | `partition` | partition name (default `default`) | Which partition holds the page (§5.3). |
 | `source` | object | Where the page came from: `origin`, `basis`, `principal`, `on_behalf_of`, `client`, `session`, `at` (below). |
-| `derived_from` | array of paths | Pages this one was distilled from or supersedes. |
-| `relations` | `[{ rel, target, confidence? }]` | Typed edges. `rel` is `supersedes`, `contradicts`, `refines` or `about`, or a namespaced relation `<prefix>:<name>` (for example `x-bm:pairs_with`) kept so imports stay lossless. Clients resolve conflicts with them; the server needs no graph engine. |
+| `derived_from` | array of paths | Pages this one was distilled from. Provenance only: it has no effect on retrieval. A page that replaces another says so with a `supersedes` relation (§5.2.5). |
+| `relations` | `[{ rel, target, confidence? }]` | Typed edges. `rel` is `supersedes`, `contradicts`, `refines` or `about`, or a namespaced relation `<prefix>:<name>` (for example `x-bm:pairs_with`) kept so imports stay lossless. `supersedes` has a defined effect on retrieval (§5.2.5); the others are for clients, and the server needs no graph engine. |
 | `review` | object | Review state: `state`, `generated`, `verified`, `rejected` (§5.4). Absent means approved. |
 | `x_import` | object | Set by import mode (§8.7.3): the source format, context, id, file hash and every source value without a PCP key. |
 | `x_*`, `x-*` | any | Implementation or import keys. Preserved on round trip, never interpreted by other servers. |
@@ -844,6 +844,62 @@ UTC. Staleness from `valid_until` is computed at query time: a page whose
 `valid_until` has passed is treated as `stale` by retrieval, and MUST NOT be
 presented as current without its dates, but the server MUST NOT rewrite its
 `lifecycle` for that reason.
+
+#### 5.2.5 Supersession
+
+When a fact replaces an older one, the new page says so: it carries a
+relation `{rel: supersedes, target: <path of the older page>}`. Both pages
+stay. There is no merge rule: a server never combines two pages, and two
+writers changing one page are handled by `expected_updated` (§6.2) and by
+review (§5.4).
+
+1. **When a page is superseded.** Page B is **superseded for a caller**
+   when a page A exists such that:
+   - A carries a `supersedes` relation whose `target` is B's path, and A is
+     not B;
+   - A is approved (§5.4), not `archived`, and not past `expires`;
+   - the caller can read A (partition, sensitivity and scopes);
+   - A and B are not in a cycle of `supersedes` relations.
+
+   So whether B is superseded can differ by caller: a principal that
+   cannot read A sees B as before, and learns nothing about A (§5.3
+   item 5). A proposed page supersedes nothing until it is approved.
+2. **Effect on retrieval.** `memory_search` and `context_brief` MUST leave
+   superseded pages out unless the caller asks (`include_superseded`).
+   `memory_list` lists them unless `include_superseded` is `false`.
+   `memory_read` returns a superseded page by path or by id like any other
+   page. Wherever a superseded page is returned, the result says so with
+   `superseded_by`: the paths of the pages that supersede it for this
+   caller. `superseded_by` is computed for the answer and is never stored
+   in the page.
+3. **The page itself does not change.** A server MUST NOT rewrite the
+   `lifecycle`, `updated` or any other key of a page because another page
+   supersedes it, and MUST NOT delete it. It stays in export (§8.2) as it
+   was written, and the relation travels in the frontmatter of the
+   superseding page. Archiving or deleting the superseding page, or
+   removing the relation, makes the older page current again.
+4. **Who may supersede.** A write that adds a `supersedes` relation is a
+   change to how its target is retrieved, so the caller needs, on the
+   target, what a write to the target would need: `write` on the target's
+   partition, and `memory.sensitive:write` if the target is sensitive
+   (§5.2.2). Without them the write fails with `forbidden`. If no page is
+   at the target path, or the caller cannot read the page there, the write
+   fails with `not_found`, the same answer in both cases (§6.3). Where the
+   caller's writes need review, the write is a proposal like any other.
+5. **Chains and cycles.** If C supersedes B and B supersedes A, both A and
+   B are superseded and only C is returned by default. A server SHOULD
+   reject a write that would close a cycle, with `invalid_input`. Pages
+   that are in a cycle all the same (for example after an import) are
+   treated as not superseded.
+6. **Time.** With `as_of` (§5.5 item 4), a page counts as superseded only
+   by pages recorded at or before that instant. A superseded page keeps
+   its `valid_from` and `valid_until`; supersession does not set them.
+7. **Moves.** A relation names a path. When a page moves to another path,
+   the server MUST update the `target` of the `supersedes` relations that
+   named it, so a move does not make an older page current again.
+
+Other relations (`contradicts`, `refines`, `about` and namespaced ones)
+have no effect on retrieval.
 
 ### 5.3 Partitions
 
@@ -919,7 +975,8 @@ request. Whatever the method, `memory_search`, `memory_list` and
    (`include_stale`) or when nothing else matches, and then with their dates.
    `memory_list` lists stale pages with their `lifecycle` unless
    `include_stale` is `false`. All three exclude `archived` pages unless asked
-   (`include_archived`), and never return pages past `expires`.
+   (`include_archived`), and never return pages past `expires`. Superseded
+   pages are left out as §5.2.5 item 2 says.
 3. **Honor review.** As §5.4 item 4.
 4. **Support `as_of`.** `memory_search` accepts `as_of`, an instant, and then
    answers as the context stood at that instant: only pages with
@@ -1587,6 +1644,9 @@ For each page in the archive, an importer in import mode:
      characters, and records the source path in `x_import.path`.
      `replace` overwrites the page; it needs `write` on the partition, and
      `memory.sensitive:write` if either page is sensitive.
+     `supersede` stores it as `rename` does and adds a `supersedes`
+     relation to the existing page (§5.2.5), so the two do not both
+     appear as current; it needs what §5.2.5 item 4 asks.
 
    **Case collisions.** A path that differs only in case from an existing
    page, or from an earlier page of the same import, counts as taken. An
@@ -1635,6 +1695,14 @@ For each page in the archive, an importer in import mode:
     `x_example`).
 11. **Writes an audit entry** (`channel: "import"`, `action:
     "import.merge"`, categories, counts; never paths).
+12. **Keeps `supersedes` relations true.** When the import stores a page
+    under another path (item 5), `supersedes` relations in the same import
+    that name its source path are written with the new path. A
+    `supersedes` relation whose target the importer may not supersede
+    (§5.2.5 item 4), or whose target is in neither the import nor the
+    context, is not written as a relation: it is kept in
+    `x_import.relations` and reported. Restore (§8.7.2) keeps every
+    relation as it is.
 
 Extension data follows §8.5 item 4 in both modes.
 
@@ -2414,7 +2482,8 @@ archives the server has restored, and that has restored the server's.
 - **Reserved namespaces:** writing the schemas for `pcp.residency`,
   `pcp.legal`, `pcp.family`, `pcp.finance` and `pcp.home`, which stay empty
   until then (§4.6 rule 5).
-- **Memory conflicts:** whether client-side resolution through `relations`
+- **Memory conflicts:** §5.2.5 defines what `supersedes` does and sets no
+  merge rule. For other conflicts, whether client-side resolution through `relations`
   (§5.2) is enough, or a server needs a normative merge and supersession rule.
 - **Pages in several partitions:** some team servers file one item under
   several scopes, and a page has one partition today.
